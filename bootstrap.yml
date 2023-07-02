@@ -20,10 +20,12 @@
           - stow
           - fish
           - starship
+          - zoxide
           - tmux
           - github-cli
           - vim
           - neovim
+          - exa
 
     - name: Copy configuration
       ansible.builtin.command: stow home --verbose=2

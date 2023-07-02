@@ -1,11 +1,11 @@
 
 alias vim nvim
 alias c clear
-alias ls lsd
+alias ls exa
 alias ip "ip -c"
 
 function notify-send
-  wsl-notify-send.exe --category $WSL_DISTRO_NAME "$argv"
+    wsl-notify-send.exe --category $WSL_DISTRO_NAME "$argv"
 end
 
 if status is-interactive
@@ -13,7 +13,7 @@ if status is-interactive
 end
 
 function reload-config
-  source ~/.config/fish/config.fish
+    source ~/.config/fish/config.fish
 end
 
 starship init fish | source
@@ -25,4 +25,3 @@ set -gx PATH "$PNPM_HOME" $PATH
 # pnpm end
 set -gx VOLTA_HOME "$HOME/.volta"
 set -gx PATH "$VOLTA_HOME/bin" $PATH
-
