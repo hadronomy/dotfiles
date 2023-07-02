@@ -1,3 +1,4 @@
+---
 - name: Bootstrap development environment
   hosts: localhost
   roles:
@@ -23,3 +24,8 @@
           - github-cli
           - vim
           - neovim
+
+    - name: Copy configuration
+      ansible.builtin.command: stow home --verbose=2
+      register: result
+      changed_when: 'result.stderr is search("LINK: ")'
