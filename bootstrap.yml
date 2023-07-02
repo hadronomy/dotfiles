@@ -1,0 +1,25 @@
+- name: Bootstrap development environment
+  hosts: localhost
+  roles:
+    - role: install-yay
+
+  tasks:
+    - name: Update mirros and packages
+      become: true
+      community.general.pacman:
+        update_cache: true
+        upgrade: true
+
+    - name: Install dependencies
+      become: true
+      community.general.pacman:
+        name:
+          - git
+          - base-devel
+          - stow
+          - fish
+          - starship
+          - tmux
+          - github-cli
+          - vim
+          - neovim

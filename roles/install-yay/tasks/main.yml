@@ -1,0 +1,29 @@
+---
+- name: Install dependencies
+  become: true
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - base-devel
+    - git
+
+- name: Clone yay from github
+  become: true
+  git:
+    repo: https://aur.archlinux.org/yay-bin.git
+    dest: /tmp/yay
+    version: master
+    update: yes
+  tags:
+    - yay
+
+- name: makepkg --noconfirm -si
+  command: makepkg --noconfirm -si
+  become: true
+  args:
+    chdir: /tmp/yay
+    creates: /usr/bin/yay
+  tags:
+    - yay
+    

@@ -1,0 +1,6 @@
+{
+  "ansible.python.interpreterPath": "/bin/python",
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/tasks": "file:///home/hadronomy/repos/dotfiles/roles/install-yay/tasks/main.yml"
+  }
+}
