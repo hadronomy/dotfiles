@@ -3,6 +3,7 @@ alias vim nvim
 alias c clear
 alias ls exa
 alias ip "ip -c"
+alias la "ls -la"
 
 function notify-send
     wsl-notify-send.exe --category $WSL_DISTRO_NAME "$argv"
