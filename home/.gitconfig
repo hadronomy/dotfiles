@@ -1,12 +1,18 @@
 [user]
 	email = 17086478+Hadronomy@users.noreply.github.com
 	name = Pablo Hernández
-	signingkey = DEE31A3B1B665C46
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP7/sbN2cf0osvvjA7Z0+ymkcsO6mdnrPMe4drvM5lGa
+
 [core]
 	editor = nvim
 	autocrlf = input
+
+[gpg]
+    format = ssh
+
 [commit]
 	gpgsign = true
+
 [core]
     pager = delta
 
