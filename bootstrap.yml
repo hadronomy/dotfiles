@@ -25,6 +25,7 @@
           - github-cli
           - vim
           - neovim
+          - bat
           - exa
 
     - name: Stow dotfiles
