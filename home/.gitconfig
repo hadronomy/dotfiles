@@ -1,0 +1,31 @@
+[user]
+	email = 17086478+Hadronomy@users.noreply.github.com
+	name = Pablo Hernández
+	signingkey = DEE31A3B1B665C46
+[core]
+	editor = nvim
+	autocrlf = input
+[commit]
+	gpgsign = true
+[core]
+    pager = delta
+
+[interactive]
+    diffFilter = delta --color-only --features=interactive
+
+[delta]
+    features = decorations
+
+[delta "interactive"]
+    keep-plus-minus-markers = false
+
+[delta "decorations"]
+    commit-decoration-style = blue ol
+    commit-style = raw
+    file-style = omit
+    hunk-header-decoration-style = blue box
+    hunk-header-file-style = red
+    hunk-header-line-number-style = "#067a00"
+  hunk-header-style = file line-number syntax
+
+
