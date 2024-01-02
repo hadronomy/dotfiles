@@ -27,6 +27,8 @@
           - neovim
           - bat
           - exa
+          - zellij
+          - atuin
 
     - name: Stow dotfiles
       ansible.builtin.command: stow home --verbose=2
