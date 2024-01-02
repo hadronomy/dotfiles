@@ -1,14 +1,14 @@
-set IS_WSL $(uname -r | grep "microsoft" > /dev/null; echo $status) 
+set IS_WSL (uname -r | grep "microsoft" > /dev/null; echo $status) 
 
 # Check if fish is running in wsl
 if test $IS_WSL != "0"
-    return
+    exit
 end
 
 set SSH_AUTH_SOCK $HOME/.ssh/agent.sock
 export SSH_AUTH_SOCK
 
-set ALREADY_RUNNING $(ps -auxww | grep -q "[n]piperelay.exe -ei -s //./pipe/openssh-ssh-agent"; echo $status)
+set ALREADY_RUNNING (ps -auxww | grep -q "[n]piperelay.exe -ei -s //./pipe/openssh-ssh-agent"; echo $status)
 if test $ALREADY_RUNNING != "0"
     if test -e $SSH_AUTH_SOCK
         echo "Removing previous socket..."
