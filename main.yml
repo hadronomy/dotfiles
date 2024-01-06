@@ -30,7 +30,3 @@
           - zellij
           - atuin
 
-    - name: Stow dotfiles
-      ansible.builtin.command: stow home --verbose=2
-      register: result
-      changed_when: 'result.stderr is search("LINK: ")'
