@@ -5,6 +5,7 @@ alias ls exa
 alias ip "ip -c"
 alias la "ls -la"
 
+# If we're running in WSL, we need to use wsl-notify-send to show notifications
 if cat /proc/version | grep "microsoft.*WSL"
     function notify-send
         wsl-notify-send.exe --category $WSL_DISTRO_NAME "$argv"
