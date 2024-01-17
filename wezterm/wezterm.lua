@@ -1,11 +1,12 @@
 return {
-    enable_wayland = false,
+  enable_wayland = false,
 	color_schemes = {
 		["Gnome Light"] = require("gnome"),
 		["Charmful Dark"] = require("charmful"),
 	},
 	color_scheme = "Charmful Dark",
 	font = require("wezterm").font("CaskaydiaCove NF"),
+	font_size = 16,
 	default_cursor_style = "BlinkingBar",
 
 	-- default_prog = { "tmux" },
