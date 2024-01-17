@@ -1,6 +1,12 @@
 { pkgs, config, username, ... }:
 let
-  aliases = {};
+  aliases = {
+    "vim" = "nvim";
+    "c" = "clear";
+    "ls" = "eza";
+    "ip" = "ip -c";
+    "la" = "ls -la";
+  };
 in
 { 
 
@@ -9,12 +15,8 @@ in
     
     fish = {
       enable = true;
+      shellAliases = aliases;
       interactiveShellInit = ''
-alias vim nvim
-alias c clear
-alias ls eza
-alias ip "ip -c"
-alias la "ls -la"
 
 # If we're running in WSL, we need to use wsl-notify-send to show notifications
 if cat /proc/version | grep "microsoft.*WSL"
