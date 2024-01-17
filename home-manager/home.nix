@@ -6,6 +6,11 @@ in
   imports = [
     ./git.nix
     ./sh.nix
+    ./stm.nix
+    ./hyprland.nix
+    ./ags.nix
+    ./wezterm.nix
+    ./theme.nix
     ./packages.nix
   ];
 

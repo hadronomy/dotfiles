@@ -20,9 +20,10 @@
   # Configure keymap in X11
   services.xserver = {
     layout = "es";
-    xkbVariant = "winkeys";
+    xkbVariant = "";
+
   };
 
   # Configure console keymap
-  console.keyMap = "es";
+  console.useXkbConfig = true;
 }

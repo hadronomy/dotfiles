@@ -8,8 +8,8 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
-      # ./hyprland.nix
-      ./gnome.nix
+      ./hyprland.nix
+      # ./gnome.nix
       ./locale.nix
     ];
 
