@@ -8,6 +8,8 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      # ./hyprland.nix
+      ./gnome.nix
       ./locale.nix
     ];
 
@@ -22,18 +24,18 @@
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
+  services = {
+    xserver = {
+      enable = true;
+      excludePackages = [ pkgs.xterm ];
+    };
+    printing.enable = true;
+    flatpak.enable = true;
+  };
+
+
   # Enable networking
   networking.networkmanager.enable = true;
-
-  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Enable the GNOME Desktop Environment.
-  services.xserver.displayManager.gdm.enable = true;
-  services.xserver.desktopManager.gnome.enable = true;
-
-  # Enable CUPS to print documents.
-  services.printing.enable = true;
 
   # Enable sound with pipewire.
   sound.enable = true;
@@ -90,6 +92,7 @@
   #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     home-manager
     neovim
+    kitty
     git
     wget
   ];
