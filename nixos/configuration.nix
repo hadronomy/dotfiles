@@ -54,11 +54,12 @@
 
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
-
+  programs.fish.enable = true;
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users."${username}" = {
     isNormalUser = true;
     description = "Pablo Hernández";
+    shell = pkgs.fish;
     extraGroups = [ "networkmanager" "wheel" ];
     packages = with pkgs; [
       firefox

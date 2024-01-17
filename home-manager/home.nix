@@ -5,6 +5,8 @@ in
 {
   imports = [
     ./git.nix
+    ./sh.nix
+    ./packages.nix
   ];
 
   targets.genericLinux.enable = true;
