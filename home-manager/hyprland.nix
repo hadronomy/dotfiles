@@ -36,6 +36,7 @@ in
         "ags -b hypr"
         "hyprctl setcursor Qogir 24"
         "transmission-gtk"
+        "1password --silent"
       ];
 
       monitor = [
