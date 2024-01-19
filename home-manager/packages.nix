@@ -31,6 +31,8 @@
     zoxide
     bat
     eza
+    du-dust
+    delta
     fd
     ripgrep
     fzf
@@ -44,6 +46,13 @@
     zip
     unzip
     glib
+    openssl
+    gnumake
+    ninja
+    patchelf
+    file
+    stdenv
+    magic-wormhole
 
     # hyprland
     wl-gammactl
