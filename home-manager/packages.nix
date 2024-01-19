@@ -34,6 +34,7 @@
     du-dust
     delta
     fd
+    lf
     ripgrep
     fzf
     socat
