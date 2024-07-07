@@ -22,6 +22,7 @@ function reload-config
 end
 
 starship init fish | source
+thefuck --alias | source
 zoxide init fish | source
 
 # pnpm
@@ -34,3 +35,7 @@ set -gx PATH "$VOLTA_HOME/bin" $PATH
 # bun
 set --export BUN_INSTALL "$HOME/.bun"
 set --export PATH $BUN_INSTALL/bin $PATH
+
+# Created by `pipx` on 2024-02-02 13:45:27
+set PATH $PATH /home/hadronomy/.local/bin
+source '/home/hadronomy/.local/share/dorothy/init.fish' # Dorothy

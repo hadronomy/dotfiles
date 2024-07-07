@@ -1,0 +1,3 @@
+# pack-refs with: peeled fully-peeled sorted 
+a1c3ace4326be80ef726c24c75d888878945c740 refs/remotes/origin/main
+d440bfc75164c4132f8d0ce02bc46d91c3a92010 refs/remotes/origin/revert-698-fix/error_make

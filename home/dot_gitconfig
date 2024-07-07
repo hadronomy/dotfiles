@@ -8,35 +8,49 @@
 	autocrlf = input
 
 [gpg]
-    format = ssh
+  format = ssh
 
 [gpg "ssh"]
-    program = "/opt/1Password/op-ssh-sign"
+  program = "/mnt/c/Users/pablo/AppData/Local/1Password/app/8/op-ssh-sign-wsl"
 
 [commit]
 	gpgsign = true
 
 [core]
-    pager = delta
+  pager = delta
+	sshCommand = ssh.exe
+	attributesFile = /home/hadronomy/.gitattributes
 
 [interactive]
-    diffFilter = delta --color-only --features=interactive
+	diffFilter = delta --color-only
 
 [delta]
-    features = decorations
+	navigate = true    # use n and N to move between diff sections
+	side-by-side = true
+	line-numbers = true
 
-[delta "interactive"]
-    keep-plus-minus-markers = false
+	hyperlinks = true
+  hyperlinks-file-link-format = "vscode://file//wsl.localhost/Arch{path}:{line}"
 
-[delta "decorations"]
-    commit-decoration-style = blue ol
-    commit-style = raw
-    file-style = omit
-    hunk-header-decoration-style = blue box
-    hunk-header-file-style = red
-    hunk-header-line-number-style = "#067a00"
-  hunk-header-style = file line-number syntax
+	# delta detects terminal colors automatically; set one of these to disable auto-detection
+	dark = true
+	# light = true
+
+[merge]
+	conflictstyle = diff3
+
+[diff]
+	colorMoved = default
 
 
 [init]
 	defaultBranch = main
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[diff "image"]
+	command = ~/bin/git-imgdiff
+[alias]
+	fixup = !git log -n 50 --pretty=format:\"%h %s\" --no-merges | fzf | cut -c -7 | xargs -o git commit --fixup
