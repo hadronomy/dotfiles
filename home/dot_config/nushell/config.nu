@@ -797,11 +797,18 @@ $env.config = {
 
 # Aliases
 
-alias inv = nvim (fzf -m --preview "bat --color=always {}")
 alias c = clear --all
 alias ll = ls -l
 alias la = ls -la
 alias vim = nvim
+
+# Uses fzf to search for a file in the current directory or
+# the directory passed as an argument
+def inv [
+  path: path = "."
+] {
+  nvim (fzf -m --preview "bat --color=always {}" --walker-root $path)
+}
 
 # FNM Configuration
 # See https://github.com/Schniz/fnm/issues/463#issuecomment-1784926846
