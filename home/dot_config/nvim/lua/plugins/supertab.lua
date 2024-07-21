@@ -16,8 +16,8 @@ return {
         ["<Tab>"] = cmp.mapping(function(fallback)
           if cmp.visible() then
             -- You could replace select_next_item() with confirm({ select = true }) to get VS Code autocompletion behavior
-            -- which i did :)
-            cmp.confirm({ select = true })
+            -- cmp.confirm({ select = true })
+            cmp.select_next_item()
           elseif vim.snippet.active({ direction = 1 }) then
             vim.schedule(function()
               vim.snippet.jump(1)
