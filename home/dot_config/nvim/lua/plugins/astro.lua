@@ -15,7 +15,6 @@ return {
         "typescript",
         "tsx",
         "javascript",
-        "jsx",
         "markdown",
       },
     },

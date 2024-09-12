@@ -184,10 +184,10 @@ return {
       },
     },
   },
-  {
-    "nvim-treesitter/nvim-treesitter",
-    opts = {
-      ensure_installed = { "typescript", "javascript", "tsx", "jsx", "html", "json" },
-    },
-  },
+  -- {
+  --   "nvim-treesitter/nvim-treesitter",
+  --   opts = {
+  --     ensure_installed = { "typescript", "javascript", "tsx", "html", "json" },
+  --   },
+  -- },
 }

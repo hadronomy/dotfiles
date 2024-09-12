@@ -1,7 +1,7 @@
 
 alias vim nvim
 alias c clear
-alias ls eza
+alias ls exa
 alias ip "ip -c"
 alias la "ls -la"
 
@@ -38,3 +38,4 @@ set --export PATH $BUN_INSTALL/bin $PATH
 
 # Created by `pipx` on 2024-02-02 13:45:27
 set PATH $PATH /home/hadronomy/.local/bin
+source '/home/hadronomy/.local/share/dorothy/init.fish' # Dorothy
