@@ -1,7 +1,7 @@
 
 alias vim nvim
 alias c clear
-alias ls exa
+alias ls eza
 alias ip "ip -c"
 alias la "ls -la"
 
@@ -29,8 +29,6 @@ zoxide init fish | source
 set -gx PNPM_HOME "/home/hadronomy/.local/share/pnpm"
 set -gx PATH "$PNPM_HOME" $PATH
 # pnpm end
-set -gx VOLTA_HOME "$HOME/.volta"
-set -gx PATH "$VOLTA_HOME/bin" $PATH
 
 # bun
 set --export BUN_INSTALL "$HOME/.bun"
@@ -38,4 +36,3 @@ set --export PATH $BUN_INSTALL/bin $PATH
 
 # Created by `pipx` on 2024-02-02 13:45:27
 set PATH $PATH /home/hadronomy/.local/bin
-source '/home/hadronomy/.local/share/dorothy/init.fish' # Dorothy
