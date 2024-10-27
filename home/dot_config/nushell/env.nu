@@ -2,6 +2,13 @@
 #
 # version = "0.89.0"
 
+# Load from-bash.nu script
+source ~/.config/nushell/custom-scripts/from-bash.nu
+
+# Load configurations only available for bash
+# before nushell specific configurations are loaded
+from bash ~/.config/nushell/env.sh | load-env
+
 def create_left_prompt [] {
     starship prompt --cmd-duration $env.CMD_DURATION_MS $'--status=($env.LAST_EXIT_CODE)'
 }
@@ -109,6 +116,7 @@ $env.PATH = (
     | append ($env.HOME | path join .go bin)
     | append ($env.HOME | path join .surrealdb)
     | append ($env.HOME | path join .local bin)
+    | append ($env.HOME | path join .rvm bin)
     | append ($env.HOME | path join android-sdk cmdline-tools bin)
     | uniq
 )

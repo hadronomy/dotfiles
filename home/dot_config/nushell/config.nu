@@ -226,8 +226,8 @@ $env.config = {
     }
 
     color_config: $dark_theme # if you want a more interesting theme, you can replace the empty record with `$dark_theme`, `$light_theme` or another custom record
-    use_grid_icons: true
-    footer_mode: "25" # always, never, number_of_rows, auto
+    # use_grid_icons: true
+    footer_mode: 25 # always, never, number_of_rows, auto
     float_precision: 2 # the precision for displaying floats in tables
     buffer_editor: "" # command that will be used to edit the current line buffer with ctrl+o, if unset fallback to $env.EDITOR and $env.VISUAL
     use_ansi_coloring: true
@@ -792,23 +792,30 @@ $env.config = {
             mode: emacs
             event: {edit: capitalizechar}
         }
+        {
+            name: reload_config
+            modifier: none
+            keycode: f5
+            mode: [emacs vi_normal vi_insert]
+            event: {
+               send: executehostcommand,
+               cmd: $"clear;source '($nu.env-path)';source '($nu.config-path)';print 'Config reloaded.\n'"
+            }
+        }
     ]
 }
 
 # Aliases
-
-alias c = clear --all
+alias c = clear
 alias ll = ls -l
 alias la = ls -la
 alias vim = nvim
+alias inv = se
 
-# Uses fzf to search for a file in the current directory or
-# the directory passed as an argument
-def inv [
-  path: path = "."
-] {
-  nvim (fzf -m --preview "bat --color=always {}" --walker-root $path)
-}
+alias notify-send = wsl-notify-send.exe
+alias command = which
+alias pbcopy = xsel --clipboard --input
+alias pbpaste = xsel --clipboard --output
 
 # FNM Configuration
 # See https://github.com/Schniz/fnm/issues/463#issuecomment-1784926846
@@ -830,11 +837,16 @@ source ~/.local/share/atuin/init.nu
 # Completions
 source ~/.config/nushell/scripts/custom-completions/git/git-completions.nu
 source ~/.config/nushell/scripts/custom-completions/pnpm/pnpm-completions.nu
+source ~/.config/nushell/scripts/custom-completions/poetry/poetry-completions.nu
+source ~/.config/nushell/scripts/custom-completions/cargo/cargo-completions.nu
+source ~/.config/nushell/scripts/custom-completions/make/make-completions.nu
+
 
 # Scripts
 
 # Load the scripts in the scripts directory
 source ~/.config/nushell/scripts/modules/formats/from-env.nu
+source ~/.config/nushell/custom-scripts/from-bash.nu
 
 # yazi
 def --env yy [...args] {
@@ -847,5 +859,18 @@ def --env yy [...args] {
 	rm -fp $tmp
 }
 
+# Uses fzf to search for a file in the current directory or
+# the directory passed as an argument
+def se [
+  path: path = "."
+] {
+  nvim (fzf -m --preview "bat --color=always {}" --walker-root $path)
+}
+
 source ~/.config/nushell/zoxide.nu
+
+$env.ASDF_DIR = '/opt/asdf-vm/'
+ source /opt/asdf-vm/asdf.nu
+
+from bash ~/.profile | load-env
 
