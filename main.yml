@@ -6,13 +6,15 @@
 
   tasks:
     - name: Update mirros and packages
-      become: true
+      become: True
+      become_user: root
       community.general.pacman:
-        update_cache: true
-        upgrade: true
+        update_cache: True
+        upgrade: True
 
     - name: Install dependencies
-      become: true
+      become: True
+      become_user: root
       community.general.pacman:
         name:
           - git

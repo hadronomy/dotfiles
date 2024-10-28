@@ -1,6 +1,7 @@
 ---
 - name: Install dependencies
-  become: true
+  become: True
+  become_user: root
   ansible.builtin.package:
     name: "{{ item }}"
     state: present
@@ -9,18 +10,20 @@
     - git
 
 - name: Clone yay from github
-  become: true
+  become: True
+  become_user: root
   ansible.builtin.git:
     repo: https://aur.archlinux.org/yay-bin.git
     dest: /tmp/yay
     version: master
-    update: true
+    update: True
   tags:
     - yay
 
 - name: Run makepkg --noconfirm -si
   ansible.builtin.command: makepkg --noconfirm -si
-  become: true
+  become: True
+  become_user: root
   args:
     chdir: /tmp/yay
     creates: /usr/bin/yay
