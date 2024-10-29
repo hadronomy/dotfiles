@@ -12,6 +12,9 @@ command_timeout = 1000
 success_symbol = '[➜](bold green)'
 error_symbol = '[x](bold red)'
 
+[ruby]
+detect_variables = []
+
 # Disable the package module, hiding it from the prompt completely
 # [line_break]
 # disabled = true
