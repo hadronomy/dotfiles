@@ -107,6 +107,9 @@ $env.CARGO_HOME = $"($env.HOME)/.cargo"
 # android
 $env.ANDROID_HOME = $"($env.HOME)/android-sdk"
 
+# go
+$env.GOPATH = $"($env.HOME)/.go"
+
 $env.PATH = ( 
   $env.PATH 
     | split row (char esep)
