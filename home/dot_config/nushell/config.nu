@@ -868,9 +868,9 @@ def se [
 }
 
 source ~/.config/nushell/zoxide.nu
+source ~/.config/nushell/mise.nu
 
-$env.ASDF_DIR = '/opt/asdf-vm/'
- source /opt/asdf-vm/asdf.nu
+use ~/.config/nushell/scripts/bash-env.nu
 
 from bash ~/.profile | load-env
-
+from bash /etc/profile.d/nix.sh | load-env
