@@ -7,7 +7,7 @@ source ~/.config/nushell/custom-scripts/from-bash.nu
 
 # Load configurations only available for bash
 # before nushell specific configurations are loaded
-from bash ~/.config/nushell/env.sh | load-env
+# from bash ~/.config/nushell/env.sh | load-env
 
 def create_left_prompt [] {
     starship prompt --cmd-duration $env.CMD_DURATION_MS $'--status=($env.LAST_EXIT_CODE)'
@@ -127,3 +127,4 @@ $env.PATH = (
 # Set default editor to nvim
 $env.EDITOR = "nvim"
 
+# hide-env RUBY_VERSION
