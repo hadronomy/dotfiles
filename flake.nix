@@ -1,0 +1,108 @@
+{
+  description = "hadronomy's nix home-manager config";
+
+  inputs = {
+    # Nixpkgs
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+
+    # Home Manager
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nix-index-database = {
+      url = "github:Mic92/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    bash-env-json = {
+      url = "github:tesujimath/bash-env-json/main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    bash-env-nushell = {
+      url = "github:tesujimath/bash-env-nushell/main";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.bash-env-json.follows = "bash-env-json";
+    };
+  };
+
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nix-index-database, bash-env-json, bash-env-nushell, ... }@inputs: let
+    inherit (self) outputs;
+
+    system = "x86_64-linux";
+    systems = [
+      "x86_64-linux"
+    ];
+
+    pkgs = import nixpkgs {
+      system = "x86_64-linux";
+      config = {
+        allowUnfree = true;
+        permittedInsecurePackages = [
+          "electron-25.9.0"
+        ];
+      };
+    };
+
+    flakePkgs = {
+      bash-env-json = bash-env-json.packages.${system}.default;
+      bash-env-nushell = bash-env-nushell.packages.${system}.default;
+    };
+
+    forAllSystems = nixpkgs.lib.genAttrs systems;
+  in  {
+
+    overlays.additions = final: _prev: import ./pkgs final.pkgs;
+
+    overlays.unstable = final: prev: {
+      unstable = import nixpkgs-unstable {
+        system = prev.system;
+        config.allowUnfree = prev.config.allowUnfree;
+      };
+    };
+
+    nixpkgs.overlays = [
+      self.overlays.unstable
+    ];
+
+    packages = forAllSystems (system: import ./pkgs nixpkgs.legacyPackages.${system});
+
+    homeConfigurations.hadronomy = home-manager.lib.homeManagerConfiguration {
+      inherit pkgs;
+      extraSpecialArgs = { inherit inputs; inherit flakePkgs; };
+
+      modules = [
+        ./home
+        ./modules/hm
+         nix-index-database.hmModules.nix-index
+      ];
+    };
+
+    devShells = forAllSystems (system:
+      {
+        inherit pkgs;
+        default = pkgs.mkShellNoCC {
+          buildInputs = with pkgs; [
+            (writeScriptBin "dot-clean" ''
+              nix-collect-garbage -d --delete-older-than 30d
+            '')
+            (writeScriptBin "dot-sync" ''
+              git pull --rebase origin main
+              nix flake update
+              dot-clean
+              dot-apply
+            '')
+            (writeScriptBin "dot-apply" ''
+              if test $(uname -s) == "Linux"; then
+                home-manager switch --flake .
+              fi
+            '')
+          ];
+        };
+      }
+    );
+  };
+}
