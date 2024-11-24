@@ -30,6 +30,7 @@ in
         continuum
         catppuccin
         fzf-url
+        vim-tmux-navigator
       ];
     };
   };
