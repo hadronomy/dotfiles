@@ -22,6 +22,7 @@ in
       pbpaste = "xsel --clipboard --output";
       wormhole = "wormhole-rs";
       inv = "se";
+      v = "nvim";
     };
   };
 
