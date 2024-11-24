@@ -32,12 +32,9 @@
 
 - [nix](https://nixos.org/)
 
-> [!NOTE]
-> Now better than ever, I'm using [nix](https://nixos.org/) to manage
-> my system configuration.
-
 > [!WARNING]
-> In the progress of organizing and improving my nix configuration.
+> For the **neovim** configuration to work the repository
+> or must live in `~/.dotfiles`
 
 ## Usage
 
