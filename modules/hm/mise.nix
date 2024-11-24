@@ -4,7 +4,7 @@
 with lib;
 
 let
-  cfg = config.programs.mise-hadronomy;
+  cfg = config.programs.hadronomy.mise;
   tomlFormat = pkgs.formats.toml { };
 in {
   # imports = let
@@ -24,8 +24,8 @@ in {
   # ];
 
   options = {
-    programs.mise-hadronomy = {
-      enable = mkEnableOption "mise-hadronomy";
+    programs.hadronomy.mise = {
+      enable = mkEnableOption "mise";
 
       package = mkPackageOption pkgs "mise" { };
 

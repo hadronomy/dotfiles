@@ -12,6 +12,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Nix User Repository
+    nur.url = "github:nix-community/NUR";
+
     nix-index-database = {
       url = "github:Mic92/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -29,80 +32,88 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nix-index-database, bash-env-json, bash-env-nushell, ... }@inputs: let
-    inherit (self) outputs;
+  outputs = { self, ... }@inputs: 
+    with inputs;
+    let
+      inherit (self) outputs;
 
-    system = "x86_64-linux";
-    systems = [
-      "x86_64-linux"
-    ];
-
-    pkgs = import nixpkgs {
       system = "x86_64-linux";
-      config = {
-        allowUnfree = true;
-        permittedInsecurePackages = [
-          "electron-25.9.0"
-        ];
-      };
-    };
-
-    flakePkgs = {
-      bash-env-json = bash-env-json.packages.${system}.default;
-      bash-env-nushell = bash-env-nushell.packages.${system}.default;
-    };
-
-    forAllSystems = nixpkgs.lib.genAttrs systems;
-  in  {
-
-    overlays.additions = final: _prev: import ./pkgs final.pkgs;
-
-    overlays.unstable = final: prev: {
-      unstable = import nixpkgs-unstable {
-        system = prev.system;
-        config.allowUnfree = prev.config.allowUnfree;
-      };
-    };
-
-    nixpkgs.overlays = [
-      self.overlays.unstable
-    ];
-
-    packages = forAllSystems (system: import ./pkgs nixpkgs.legacyPackages.${system});
-
-    homeConfigurations.hadronomy = home-manager.lib.homeManagerConfiguration {
-      inherit pkgs;
-      extraSpecialArgs = { inherit inputs; inherit flakePkgs; };
-
-      modules = [
-        ./home
-        ./modules/hm
-         nix-index-database.hmModules.nix-index
+      systems = [
+        "x86_64-linux"
       ];
-    };
 
-    devShells = forAllSystems (system:
-      {
-        inherit pkgs;
-        default = pkgs.mkShellNoCC {
-          buildInputs = with pkgs; [
-            (writeScriptBin "dot-clean" ''
-              nix-collect-garbage -d --delete-older-than 30d
-            '')
-            (writeScriptBin "dot-sync" ''
-              git pull --rebase origin main
-              nix flake update
-              dot-clean
-              dot-apply
-            '')
-            (writeScriptBin "dot-apply" ''
-              if test $(uname -s) == "Linux"; then
-                home-manager switch --flake .
-              fi
-            '')
+      pkgs = import nixpkgs {
+        system = "x86_64-linux";
+        config = {
+          allowUnfree = true;
+          permittedInsecurePackages = [
+            "electron-25.9.0"
           ];
         };
-      }
-    );
-  };
+      };
+
+      flakePkgs = {
+        bash-env-json = bash-env-json.packages.${system}.default;
+        bash-env-nushell = bash-env-nushell.packages.${system}.default;
+      };
+
+      forAllSystems = nixpkgs.lib.genAttrs systems;
+    in  {
+
+      overlays.additions = final: _prev: import ./pkgs final.pkgs;
+
+      overlays.unstable = final: prev: {
+        unstable = import nixpkgs-unstable {
+          system = prev.system;
+          config.allowUnfree = prev.config.allowUnfree;
+        };
+      };
+
+      nixpkgs.overlays = [
+        self.overlays.unstable
+        nur.overlay
+      ];
+
+      packages = forAllSystems (system: import ./pkgs nixpkgs.legacyPackages.${system});
+
+      homeConfigurations.hadronomy = home-manager.lib.homeManagerConfiguration {
+        inherit pkgs;
+        extraSpecialArgs = { inherit flakePkgs; } // inputs;
+
+        modules = [
+          ./home
+        ] ++ builtins.attrValues self.homeManagerModules;
+      };
+
+      homeManagerModules = builtins.listToAttrs (
+        map (name: {
+          inherit name;
+          value = import (./modules/hm + "/${name}");
+        }) (builtins.attrNames (builtins.readDir ./modules/hm))
+      );
+
+      devShells = forAllSystems (system:
+        {
+          inherit pkgs;
+          default = pkgs.mkShellNoCC {
+            buildInputs = with pkgs; [
+              (writeScriptBin "dot-clean" ''
+                nix-collect-garbage -d --delete-older-than 30d
+              '')
+              (writeScriptBin "dot-sync" ''
+                git pull --rebase origin main
+                nix flake update
+                dot-clean
+                dot-apply
+              '')
+              (writeScriptBin "dot-apply" ''
+                if test $(uname -s) == "Linux"; then
+                  home-manager switch --flake .
+                fi
+              '')
+            ];
+          };
+        }
+      );
+    };
 }

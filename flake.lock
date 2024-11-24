@@ -172,6 +172,21 @@
         "type": "github"
       }
     },
+    "nur": {
+      "locked": {
+        "lastModified": 1732405614,
+        "narHash": "sha256-Xi/S5NN8R75fy0SJmYfDv0ACGHqjL0Xc9fX7okOGt/g=",
+        "owner": "nix-community",
+        "repo": "NUR",
+        "rev": "7a3e6d03844e420619c76108379d012026a45d10",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "NUR",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "bash-env-json": "bash-env-json",
@@ -179,7 +194,8 @@
         "home-manager": "home-manager",
         "nix-index-database": "nix-index-database",
         "nixpkgs": "nixpkgs_2",
-        "nixpkgs-unstable": "nixpkgs-unstable"
+        "nixpkgs-unstable": "nixpkgs-unstable",
+        "nur": "nur"
       }
     },
     "rust-overlay": {
