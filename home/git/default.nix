@@ -1,0 +1,65 @@
+{ lib, ... }:
+with lib;
+let
+  isWSL = builtins.getEnv "WSL_DISTRO_NAME" != null;
+in
+{
+  # TODO: Improve this with home-manager modules adding the wslConfig option to the git module
+  # something like what catppuccin/nix does
+  programs.git = {
+    enable = true;
+    extraConfig = {
+      user = {
+        name = "Pablo Hernández";
+        email = "17086478+Hadronomy@users.noreply.github.com";
+        signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP7/sbN2cf0osvvjA7Z0+ymkcsO6mdnrPMe4drvM5lGa";
+      };
+      core = {
+        editor = "nvim";
+        autocrlf = "input";
+        sshCommand = mkIf (isWSL) "ssh.exe";
+        attributesFile = "~/.gitattributes";
+      };
+      init = {
+        defaultBranch = "main";
+      };
+      gpg = {
+        format = "ssh";
+      };
+      gpg.ssh = mkIf (isWSL) {
+        program = "/mnt/c/Users/pablo/AppData/Local/1Password/app/8/op-ssh-sign-wsl";
+      };
+      commit = {
+        gpgsign = true;
+      };
+      merge = {
+        conflictstyle = "diff3";
+      };
+      diff = {
+        colorMoved = "default";
+      };
+      filter = {
+        lfs = {
+          clean = "git-lfs clean -- %f";
+          smudge = "git-lfs smudge -- %f";
+          process = "git-lfs filter-process";
+          required = true;
+        };
+      };
+    };
+    delta = {
+      enable = true;
+      options = {
+        navigate = true;
+        sideBySide = true;
+        lineNumbers = true;
+        hyperlinks = true;
+        hyperlinksFileLinkFormat = mkIf (isWSL) "vscode://file//wsl.localhost/Arch{path}:{line}";
+        dark = true;
+      };
+    };
+    aliases = {
+      fixup = "!git log -n 50 --pretty=format:\"%h %s\" --no-merges | fzf | cut -c -7 | xargs -o git commit --fixup";
+    };
+  };
+}
