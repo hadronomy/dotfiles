@@ -38,6 +38,7 @@ in
     ffmpeg
     macchina
     ouch
+    uv
   ];
 
   # This value determines the Home Manager release that your configuration is
