@@ -35,6 +35,7 @@ in
         {
           plugin = catppuccin;
           extraConfig = ''
+            # Catppuccin theme
             set -g @catppuccin_flavor "mocha"
 
             # Menu styling options
