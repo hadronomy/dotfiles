@@ -34,7 +34,7 @@
 
 > [!WARNING]
 > For the **neovim** configuration to work the repository
-> or must live in `~/.dotfiles`
+> must live in `~/.dotfiles`
 
 ## Usage
 
