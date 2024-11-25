@@ -37,6 +37,7 @@ in
     dust
     ffmpeg
     macchina
+    ouch
   ];
 
   # This value determines the Home Manager release that your configuration is
