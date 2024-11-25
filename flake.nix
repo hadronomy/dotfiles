@@ -30,6 +30,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.bash-env-json.follows = "bash-env-json";
     };
+
+    catppuccin.url = "github:catppuccin/nix";
   };
 
   outputs = { self, ... }@inputs: 
@@ -82,6 +84,7 @@
 
         modules = [
           ./home
+          catppuccin.homeManagerModules.catppuccin
         ] ++ builtins.attrValues self.homeManagerModules;
       };
 
