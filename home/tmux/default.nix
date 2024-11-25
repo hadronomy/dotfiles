@@ -18,6 +18,7 @@ in
 {
   home.packages = with pkgs; [
     sesh
+    fd
   ];
 
   programs = { 
@@ -29,8 +30,10 @@ in
         resurrect
         continuum
         catppuccin
+        tmux-fzf
         fzf-url
         vim-tmux-navigator
+        yank
       ];
     };
   };
