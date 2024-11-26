@@ -12,7 +12,7 @@ in
   programs.nix-index.enable = true;
 
   home.username = "hadronomy";
-  home.homeDirectory = "/home/hadronomy";
+  home.homeDirectory = "/home/${config.home.username}";
   xdg.enable = true;
 
   home.sessionVariables = {
