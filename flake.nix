@@ -62,7 +62,7 @@
       forAllSystems = nixpkgs.lib.genAttrs systems;
     in  {
 
-      overlays.additions = final: _prev: import ./pkgs final.pkgs;
+      overlays.additions = final: _prev: import ./packages final.pkgs;
 
       overlays.unstable = final: prev: {
         unstable = import nixpkgs-unstable {
@@ -76,7 +76,7 @@
         nur.overlay
       ];
 
-      packages = forAllSystems (system: import ./pkgs nixpkgs.legacyPackages.${system});
+      packages = forAllSystems (system: import ./packages nixpkgs.legacyPackages.${system});
 
       homeConfigurations.hadronomy = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
