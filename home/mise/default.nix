@@ -7,6 +7,7 @@
         node = "lts";
         bun = "latest";
         deno = "latest";
+        go = "latest";
       };
       settings.activate_aggresive = true;
     };
