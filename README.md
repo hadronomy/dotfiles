@@ -41,7 +41,7 @@
 After clonning the repo `cd` into it and run the following command:
 
 ```bash
-home-manager switch --flake . -b backup
+home-manager switch --flake . -b backup --impure
 ```
 
 ## License
