@@ -26,6 +26,7 @@ in
     gofumpt
     golines
     goimports-reviser
+    golangci-lint
     air
     gnumake
     templ
