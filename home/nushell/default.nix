@@ -1,16 +1,24 @@
-{ pkgs, config, specialArgs, ... }:
+{
+  pkgs,
+  config,
+  specialArgs,
+  ...
+}:
 let
   inherit (specialArgs) flakePkgs;
 in
 {
   programs.nushell = {
     enable = true;
-    configFile.text = (builtins.replaceStrings [
-        "# use NIX_BASH_ENV_NU_MODULE"
-      ] [
-        "use ${flakePkgs.bash-env-nushell}/bash-env.nu"
-      ]
-      (builtins.readFile ./config.nu)
+    configFile.text = (
+      builtins.replaceStrings
+        [
+          "# use NIX_BASH_ENV_NU_MODULE"
+        ]
+        [
+          "use ${flakePkgs.bash-env-nushell}/bash-env.nu"
+        ]
+        (builtins.readFile ./config.nu)
     );
     envFile.source = ./env.nu;
     shellAliases = {

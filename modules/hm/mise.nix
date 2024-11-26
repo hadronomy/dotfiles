@@ -1,12 +1,18 @@
 # Adds nushell integration to the mise package
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
 let
   cfg = config.programs.hadronomy.mise;
   tomlFormat = pkgs.formats.toml { };
-in {
+in
+{
   # imports = let
   #   mkRemovedWarning = opt:
   #     (mkRemovedOptionModule [ "programs" "rtx" opt ] ''

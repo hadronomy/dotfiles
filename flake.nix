@@ -34,7 +34,8 @@
     catppuccin.url = "github:catppuccin/nix";
   };
 
-  outputs = { self, ... }@inputs: 
+  outputs =
+    { self, ... }@inputs:
     with inputs;
     let
       inherit (self) outputs;
@@ -60,7 +61,9 @@
       };
 
       forAllSystems = nixpkgs.lib.genAttrs systems;
-    in  {
+    in
+    {
+      formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
 
       overlays.additions = final: _prev: import ./packages final.pkgs;
 
@@ -80,7 +83,9 @@
 
       homeConfigurations.hadronomy = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
-        extraSpecialArgs = { inherit flakePkgs; } // inputs;
+        extraSpecialArgs = {
+          inherit flakePkgs;
+        } // inputs;
 
         modules = [
           ./home
@@ -95,28 +100,26 @@
         }) (builtins.attrNames (builtins.readDir ./modules/hm))
       );
 
-      devShells = forAllSystems (system:
-        {
-          inherit pkgs;
-          default = pkgs.mkShellNoCC {
-            buildInputs = with pkgs; [
-              (writeScriptBin "dot-clean" ''
-                nix-collect-garbage -d --delete-older-than 30d
-              '')
-              (writeScriptBin "dot-sync" ''
-                git pull --rebase origin main
-                nix flake update
-                dot-clean
-                dot-apply
-              '')
-              (writeScriptBin "dot-apply" ''
-                if test $(uname -s) == "Linux"; then
-                  home-manager switch --flake .
-                fi
-              '')
-            ];
-          };
-        }
-      );
+      devShells = forAllSystems (system: {
+        inherit pkgs;
+        default = pkgs.mkShellNoCC {
+          buildInputs = with pkgs; [
+            (writeScriptBin "dot-clean" ''
+              nix-collect-garbage -d --delete-older-than 30d
+            '')
+            (writeScriptBin "dot-sync" ''
+              git pull --rebase origin main
+              nix flake update
+              dot-clean
+              dot-apply
+            '')
+            (writeScriptBin "dot-apply" ''
+              if test $(uname -s) == "Linux"; then
+                home-manager switch --flake .
+              fi
+            '')
+          ];
+        };
+      });
     };
 }

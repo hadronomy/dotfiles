@@ -26,11 +26,15 @@ in
       gpg = {
         format = "ssh";
       };
-      gpg.ssh = if (isWSL) then {
-        program = "/mnt/c/Users/pablo/AppData/Local/1Password/app/8/op-ssh-sign-wsl";
-      } else {
-        program = "/opt/1Password/op-ssh-sign";
-      };
+      gpg.ssh =
+        if isWSL then
+          {
+            program = "/mnt/c/Users/pablo/AppData/Local/1Password/app/8/op-ssh-sign-wsl";
+          }
+        else
+          {
+            program = "/opt/1Password/op-ssh-sign";
+          };
       commit = {
         gpgsign = true;
       };

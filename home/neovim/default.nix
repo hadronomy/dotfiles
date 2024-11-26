@@ -12,6 +12,6 @@ in
       catppuccin.enable = false;
     };
   };
-  
+
   xdg.configFile."nvim".source = mkOutOfStoreSymlink "${config.home.homeDirectory}/.dotfiles/home/neovim/config";
 }
