@@ -3,12 +3,14 @@
   config,
   lib,
   pkgs,
+  specialArgs,
   ...
 }:
 
 with lib;
 
 let
+  inherit (specialArgs) std;
   cfg = config.programs.hadronomy.mise;
   tomlFormat = pkgs.formats.toml { };
 in
@@ -94,8 +96,13 @@ in
     home.packages = [ cfg.package ];
 
     xdg.configFile = {
-      "mise/config.toml" = mkIf (cfg.globalConfig != { }) {
-        source = tomlFormat.generate "mise-config" cfg.globalConfig;
+      "mise/init_config.toml" = mkIf (cfg.globalConfig != { }) {
+        text = std.serde.toTOML cfg.globalConfig;
+        onChange = ''
+          rm -f ${config.xdg.configHome}/mise/config.toml
+          cp ${config.xdg.configHome}/mise/init_config.toml ${config.xdg.configHome}/mise/config.toml
+          chmod u+rwx ${config.xdg.configHome}/mise/config.toml
+        '';
       };
 
       "mise/settings.toml" = mkIf (cfg.settings != { }) {

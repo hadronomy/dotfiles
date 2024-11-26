@@ -32,6 +32,7 @@
     };
 
     catppuccin.url = "github:catppuccin/nix";
+    nix-std.url = "github:chessai/nix-std";
   };
 
   outputs =
@@ -60,6 +61,8 @@
         bash-env-nushell = bash-env-nushell.packages.${system}.default;
       };
 
+      std = nix-std.lib;
+
       forAllSystems = nixpkgs.lib.genAttrs systems;
     in
     {
@@ -85,6 +88,7 @@
         inherit pkgs;
         extraSpecialArgs = {
           inherit flakePkgs;
+          inherit std;
         } // inputs;
 
         modules = [
