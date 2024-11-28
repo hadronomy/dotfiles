@@ -12,6 +12,11 @@ in
         bun = "latest";
         deno = "latest";
         go = "latest";
+        "cargo:cargo-nextest" = "latest";
+        "cargo:cargo-dist" = "latest";
+        "cargo:cargo-mutants" = "latest";
+        "cargo:cargo-binstall" = "latest";
+        "cargo:cargo-edit" = "latest";
       };
       settings.activate_aggresive = true;
     };
