@@ -32,6 +32,7 @@
     };
 
     catppuccin.url = "github:catppuccin/nix";
+    mise.url = "github:jdx/mise";
   };
 
   outputs =
@@ -58,6 +59,7 @@
       flakePkgs = {
         bash-env-json = bash-env-json.packages.${system}.default;
         bash-env-nushell = bash-env-nushell.packages.${system}.default;
+        mise = mise.packages.${system}.default;
       };
 
       forAllSystems = nixpkgs.lib.genAttrs systems;
