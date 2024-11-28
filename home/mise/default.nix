@@ -17,6 +17,7 @@ in
         "cargo:cargo-mutants" = "latest";
         "cargo:cargo-binstall" = "latest";
         "cargo:cargo-edit" = "latest";
+        watchexec = "latest";
       };
       settings.activate_aggresive = true;
     };
