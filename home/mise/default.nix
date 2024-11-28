@@ -1,4 +1,9 @@
-{ pkgs, config, specialArgs, ... }:
+{
+  pkgs,
+  config,
+  specialArgs,
+  ...
+}:
 let
   inherit (specialArgs) flakePkgs;
 in
