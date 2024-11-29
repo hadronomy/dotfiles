@@ -37,7 +37,6 @@ in
     hyperfine
     dust
     ffmpeg
-    macchina
     ouch
     uv
     fzf-make
