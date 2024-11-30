@@ -40,6 +40,7 @@ in
     ouch
     uv
     fzf-make
+    lazygit
   ];
 
   # This value determines the Home Manager release that your configuration is
