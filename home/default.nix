@@ -43,6 +43,7 @@ in
     lazygit
     chafa
     figlet
+    just
   ];
 
   # This value determines the Home Manager release that your configuration is
