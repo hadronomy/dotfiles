@@ -10,6 +10,9 @@ $env.ANDROID_HOME = $"($env.HOME)/android-sdk"
 # go
 $env.GOPATH = $"($env.HOME)/.go"
 
+$env.FZF_DEFAULT_COMMAND = "fd --hidden --strip-cwd-prefix --exclude .git"
+$env.FZF_CTRL_T_COMMAND = $env.FZF_DEFAULT_COMMAND
+
 $env.PATH = ( 
   $env.PATH 
     | split row (char esep)
