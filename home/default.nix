@@ -29,6 +29,7 @@ in
     golangci-lint
     air
     gnumake
+    cmake
     templ
     tailwindcss
     tailwindcss-language-server
