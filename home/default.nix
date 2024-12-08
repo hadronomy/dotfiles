@@ -22,6 +22,7 @@ in
   home.packages = with pkgs; [
     delta
     clang
+    clang-tools
     rustup
     gofumpt
     golines
