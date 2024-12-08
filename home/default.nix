@@ -46,6 +46,7 @@ in
     chafa
     figlet
     just
+    graphviz-nox
   ];
 
   # This value determines the Home Manager release that your configuration is
