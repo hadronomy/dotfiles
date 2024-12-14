@@ -47,6 +47,7 @@ in
     figlet
     just
     graphviz-nox
+    lychee
   ];
 
   # This value determines the Home Manager release that your configuration is
