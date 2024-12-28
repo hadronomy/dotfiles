@@ -11,7 +11,7 @@ in
   programs = {
     hadronomy.mise = {
       enable = true;
-      package = flakePkgs.mise;
+      # package = flakePkgs.mise;
       globalConfig.tools = {
         node = "lts";
         bun = "latest";
