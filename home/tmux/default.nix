@@ -91,9 +91,9 @@ in
         }
         yank
       ];
-      catppuccin = {
-        enable = false;
-      };
     };
+  };
+  catppuccin = {
+    tmux.enable = false;
   };
 }

@@ -2,7 +2,10 @@
 {
   programs.starship = {
     enable = true;
-    catppuccin.enable = false;
+  };
+
+  catppuccin = {
+    starship.enable = false;
   };
 
   xdg.configFile."starship.toml" = {
