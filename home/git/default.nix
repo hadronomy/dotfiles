@@ -11,7 +11,7 @@ in
     extraConfig = {
       user = {
         name = "Pablo Hernández";
-        email = "17086478+Hadronomy@users.noreply.github.com";
+        email = "17086478+hadronomy@users.noreply.github.com";
         signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP7/sbN2cf0osvvjA7Z0+ymkcsO6mdnrPMe4drvM5lGa";
       };
       core = {
