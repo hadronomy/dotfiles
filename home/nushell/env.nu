@@ -23,6 +23,7 @@ $env.PATH = (
     | append ($env.HOME | path join .surrealdb)
     | append ($env.HOME | path join .local bin)
     | append ($env.HOME | path join .rvm bin)
+    | append ($env.HOME | path join .bun bin)
     | append ($env.HOME | path join android-sdk cmdline-tools bin)
     | uniq
 )
