@@ -23,6 +23,7 @@ in
         "cargo:cargo-binstall" = "latest";
         "cargo:cargo-edit" = "latest";
         watchexec = "latest";
+        "asdf:CanRau/asdf-ni" = "latest";
       };
       settings.activate_aggresive = true;
     };
