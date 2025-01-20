@@ -49,6 +49,7 @@ in
     graphviz-nox
     lychee
     earthly
+    pixi
   ];
 
   # This value determines the Home Manager release that your configuration is
