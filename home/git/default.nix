@@ -1,7 +1,8 @@
-{ lib, ... }:
+{ lib, config, ... }:
 with lib;
 let
   isWSL = builtins.getEnv "WSL_DISTRO_NAME" != "";
+  disableSSHAgent = config.extraSpecialArgs.disableCustomSSHAgent or false;
 in
 {
   # TODO: Improve this with home-manager modules adding the wslConfig option to the git module
@@ -26,15 +27,16 @@ in
       gpg = {
         format = "ssh";
       };
-      gpg.ssh =
+      gpg.ssh = mkIf (!disableSSHAgent) (
         if isWSL then
-          {
-            program = "/mnt/c/Users/pablo/AppData/Local/1Password/app/8/op-ssh-sign-wsl";
-          }
+        {
+          program = "/mnt/c/Users/pablo/AppData/Local/1Password/app/8/op-ssh-sign-wsl";
+        }
         else
-          {
-            program = "/opt/1Password/op-ssh-sign";
-          };
+        {
+          program = "/opt/1Password/op-ssh-sign";
+        }
+      );
       commit = {
         gpgsign = true;
       };

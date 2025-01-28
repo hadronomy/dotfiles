@@ -87,6 +87,7 @@
         inherit pkgs;
         extraSpecialArgs = {
           inherit flakePkgs;
+          disableCustomSSHAgent = false;
         } // inputs;
 
         modules = [
