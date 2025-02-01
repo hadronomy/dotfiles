@@ -50,6 +50,7 @@ in
     lychee
     earthly
     pixi
+    superfile
   ];
 
   # This value determines the Home Manager release that your configuration is
