@@ -51,6 +51,7 @@ in
     earthly
     pixi
     superfile
+    ngrok
   ];
 
   # This value determines the Home Manager release that your configuration is
