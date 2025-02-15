@@ -9,6 +9,11 @@ in
   # something like what catppuccin/nix does
   programs.git = {
     enable = true;
+    iniContent = {
+      gpg = {
+        format = mkForce "ssh";
+      };
+    };
     extraConfig = {
       user = {
         name = "Pablo Hernández";
@@ -23,9 +28,6 @@ in
       };
       init = {
         defaultBranch = "main";
-      };
-      gpg = {
-        format = "ssh";
       };
       gpg.ssh = mkIf (!disableSSHAgent) (
         if isWSL then
