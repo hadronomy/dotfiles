@@ -63,6 +63,11 @@
       };
 
       forAllSystems = nixpkgs.lib.genAttrs systems;
+
+      # NOTE: Change this to $HOME
+      dotfilesDir = "/home/hadronomy/.dotfiles";
+
+      repoUrl = "https://github.com/hadronomy/dotfiles";
     in
     {
       formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
@@ -81,7 +86,30 @@
         nur.overlay
       ];
 
-      packages = forAllSystems (system: import ./packages nixpkgs.legacyPackages.${system});
+      packages = forAllSystems (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          cloneDotfiles = pkgs.writeShellScriptBin "clone-dotfiles"
+            ''
+              if [ ! -d "${dotfilesDir}" ]; then
+                echo "Cloning dotfiles repository..."
+                mkdir -p $(dirname "${dotfilesDir}")
+                git clone --depth 1 ${repoUrl} "${dotfilesDir}"
+              else
+                echo "Dotfiles repository already exists."
+              fi
+            '';
+
+          apply = pkgs.writeShellScriptBin "apply-dotfiles"
+            ''
+              ${self.packages.${system}.cloneDotfiles}/bin/clone-dotfiles
+              home-manager switch --flake ${dotfilesDir} -b backup --impure
+            '';
+        });
+
+      defaultPackage = forAllSystems (system: self.packages.${system}.apply);
 
       homeConfigurations.hadronomy = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
@@ -107,19 +135,19 @@
         inherit pkgs;
         default = pkgs.mkShellNoCC {
           buildInputs = with pkgs; [
+            self.packages.${system}.apply
             (writeScriptBin "dot-clean" ''
               nix-collect-garbage -d --delete-older-than 30d
             '')
             (writeScriptBin "dot-sync" ''
+              cd "${dotfilesDir}"
               git pull --rebase origin main
               nix flake update
               dot-clean
               dot-apply
             '')
             (writeScriptBin "dot-apply" ''
-              if test $(uname -s) == "Linux"; then
-                home-manager switch --flake .
-              fi
+              ${self.packages.${system}.apply}/bin/apply-dotfiles
             '')
           ];
         };

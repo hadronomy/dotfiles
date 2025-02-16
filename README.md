@@ -1,6 +1,6 @@
 <div align="center">
   <img src="/.github/images/github-header-image.webp" alt="GitHub Header Image" width="auto" />
-  
+
   <!-- MIT License -->
   <a href="https://github.com/hadronomy/dotfiles/blob/main/LICENSE.txt">
     <img
@@ -38,12 +38,53 @@
 
 ## Usage
 
-After clonning the repo `cd` into it and run the following command:
+There are two primary ways to apply this configuration. The first method is recommended for most users as it handles Home Manager installation if needed.
+
+### 1. Using the Installation Script (Recommended)
+
+This method uses a simple shell script to ensure Home Manager is installed and then applies the configuration directly from GitHub.
+
+1.  **Download and run the installation script:**
+
+    ```bash
+    curl -L https://raw.githubusercontent.com/hadronomy/dotfiles/main/install.sh | bash
+    ```
+
+    **Important:** Replace `hadronomy/dotfiles` with your repository URL.
+
+    This script will:
+
+    *   Check if Home Manager is installed. If not, it will install it.
+    *   Clone the dotfiles repository to `~/.dotfiles` (if it doesn't already exist).
+    *   Run `home-manager switch --flake ~/.dotfiles -b backup --impure`.
+
+    **Security Note:** It's always a good practice to review the contents of a script before running it, especially when piping directly from the internet. You can view the script at the URL provided.
+
+### 2. Cloning and Applying Locally
+
+If you prefer to clone the repository manually, you can do so and then apply the configuration.
+
+1.  Clone the repository:
+
+    ```bash
+    git clone https://github.com/hadronomy/dotfiles ~/.dotfiles # Replace with your repository URL
+    cd ~/.dotfiles
+    ```
+
+2.  Apply the Home Manager configuration:
+
+    ```bash
+    home-manager switch --flake . -b backup --impure
+    ```
+
+### Development
+
+To enter a development shell with the tools needed to manage the dotfiles:
 
 ```bash
-home-manager switch --flake . -b backup --impure
+nix develop
 ```
 
 ## License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
