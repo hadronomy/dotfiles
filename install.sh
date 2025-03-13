@@ -10,7 +10,18 @@ INSTALL_PY_URL="${REPO_URL}/raw/main/install.py"
 if ! command -v uv &> /dev/null; then
   echo "uv is not installed. Installing..."
   curl -LsSf https://astral.sh/uv/install.sh | sh
-  echo "uv installed successfully. Please restart your shell or source ~/.profile."
+  # Source uv to make it available in this session
+  if [ -f "$HOME/.cargo/env" ]; then
+    source "$HOME/.cargo/env"
+  fi
+  echo "uv installed successfully."
+fi
+
+# Check if uv is now in PATH
+if ! command -v uv &> /dev/null; then
+  echo "uv was installed but is not in PATH. Please add it to your PATH and try again."
+  echo "You may need to restart your shell or source ~/.profile."
+  exit 1
 fi
 
 # Download the install.py script

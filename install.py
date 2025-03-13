@@ -7,20 +7,32 @@
 # ]
 # ///
 
+import getpass
 import os
 import platform
+import re
 import shlex
 import subprocess
 import sys
 
 import typer
 from rich.console import Console
+from rich.prompt import Confirm, Prompt
 
 app = typer.Typer()
 console = Console()
 
 DOTFILES_DIR = os.path.expanduser("~/.dotfiles")
-REPO_URL = "https://github.com/hadronomy/dotfiles"  # Replace with your repo URL
+REPO_URL = "https://github.com/hadronomy/dotfiles"
+DEFAULT_USER = "hadronomy"
+CURRENT_USER = getpass.getuser()
+USER_CONFIG = {
+    "username": CURRENT_USER,
+    "git_name": "",
+    "git_email": "",
+    "git_signing_key": "",
+    "use_signing_key": False,
+}
 
 
 def run_command(command, check=True, shell=False):
@@ -202,6 +214,184 @@ def clone_dotfiles():
         console.print("[bold]Dotfiles repository already exists.[/bold]")
 
 
+def customize_dotfiles():
+    """Customize dotfiles for the current user if not the default user."""
+    if CURRENT_USER == DEFAULT_USER:
+        console.print(
+            "[green]Running as the default user, no customization needed.[/green]"
+        )
+        return
+
+    console.print(
+        "[bold yellow]Running as a non-default user, customization recommended.[/bold yellow]"
+    )
+    if Confirm.ask(
+        "Would you like to customize the dotfiles for your user?", default=True
+    ):
+        collect_user_info()
+        replace_username_in_files()
+        update_git_config()
+        console.print("[green]Customization complete![/green]")
+
+
+def collect_user_info():
+    """Collect user information for customization."""
+    console.print("[bold]Collecting user information for customization...[/bold]")
+
+    USER_CONFIG["username"] = Prompt.ask("Username", default=CURRENT_USER)
+
+    USER_CONFIG["git_name"] = Prompt.ask("Your full name (for Git config)", default="")
+
+    USER_CONFIG["git_email"] = Prompt.ask("Your email (for Git config)", default="")
+
+    if Confirm.ask(
+        "Would you like to use a GPG key for Git commit signing?", default=False
+    ):
+        USER_CONFIG["use_signing_key"] = True
+        USER_CONFIG["git_signing_key"] = Prompt.ask(
+            "Your GPG key ID for signing commits", default=""
+        )
+
+
+def replace_username_in_files():
+    """Replace instances of the default username with the current user's username."""
+    console.print(
+        f"[bold]Replacing '{DEFAULT_USER}' with '{USER_CONFIG['username']}' in dotfiles...[/bold]"
+    )
+
+    # Define patterns to avoid changing in certain files or types
+    excluded_dirs = [".git", "node_modules", ".cache", "target"]
+    excluded_exts = [
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".webp",
+        ".ico",
+        ".svg",
+        ".ttf",
+        ".woff",
+        ".woff2",
+    ]
+
+    for root, dirs, files in os.walk(DOTFILES_DIR):
+        # Skip excluded directories
+        dirs[:] = [d for d in dirs if d not in excluded_dirs]
+
+        for file in files:
+            if any(file.endswith(ext) for ext in excluded_exts):
+                continue
+
+            file_path = os.path.join(root, file)
+
+            try:
+                # Skip binary files
+                if is_binary(file_path):
+                    continue
+
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+
+                # Replace only if content contains the pattern
+                if DEFAULT_USER in content:
+                    modified_content = content.replace(
+                        DEFAULT_USER, USER_CONFIG["username"]
+                    )
+
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        f.write(modified_content)
+
+                    console.print(f"  Updated: {file_path}")
+            except Exception as e:
+                console.print(
+                    f"[yellow]Warning: Could not process {file_path}: {e}[/yellow]"
+                )
+
+
+def update_git_config():
+    """Update Git configuration with user information."""
+    if not USER_CONFIG["git_name"] and not USER_CONFIG["git_email"]:
+        return
+
+    console.print("[bold]Updating Git configuration...[/bold]")
+
+    git_config_path = os.path.join(DOTFILES_DIR, "home", "git", "default.nix")
+    if not os.path.exists(git_config_path):
+        console.print(
+            "[yellow]Git config file not found, skipping Git configuration.[/yellow]"
+        )
+        return
+
+    try:
+        with open(git_config_path, "r") as f:
+            content = f.read()
+
+        # Update user name if provided
+        if USER_CONFIG["git_name"]:
+            content = re.sub(
+                r'userName\s*=\s*"[^"]*"',
+                f'userName = "{USER_CONFIG["git_name"]}"',
+                content,
+            )
+
+        # Update email if provided
+        if USER_CONFIG["git_email"]:
+            content = re.sub(
+                r'userEmail\s*=\s*"[^"]*"',
+                f'userEmail = "{USER_CONFIG["git_email"]}"',
+                content,
+            )
+
+        # Update signing key if provided
+        if USER_CONFIG["use_signing_key"] and USER_CONFIG["git_signing_key"]:
+            if "signing.key" in content:
+                # If signing key already exists, update it
+                content = re.sub(
+                    r'signing\.key\s*=\s*"[^"]*"',
+                    f'signing.key = "{USER_CONFIG["git_signing_key"]}"',
+                    content,
+                )
+            else:
+                # If signing key doesn't exist, add it
+                signing_config = f'signing.key = "{USER_CONFIG["git_signing_key"]}";\nsigning.signByDefault = true;'
+                content = re.sub(
+                    r"(extraConfig\s*=\s*{)", f"\\1\n      {signing_config}", content
+                )
+
+        with open(git_config_path, "w") as f:
+            f.write(content)
+
+        console.print("[green]Git configuration updated successfully![/green]")
+    except Exception as e:
+        console.print(
+            f"[yellow]Warning: Could not update Git configuration: {e}[/yellow]"
+        )
+
+
+def is_binary(file_path):
+    """Check if a file is binary."""
+    try:
+        with open(file_path, "rb") as f:
+            chunk = f.read(1024)
+            return b"\0" in chunk
+    except IOError:
+        return True
+
+
+def command_exists(command):
+    """Checks if a command exists."""
+    try:
+        subprocess.run(
+            ["command", "-v", command],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
 def apply_home_manager():
     """Applies the Home Manager configuration."""
     console.print("[bold]Applying Home Manager configuration...[/bold]")
@@ -225,20 +415,6 @@ def apply_home_manager():
     console.print("[green]Dotfiles applied successfully![/green]")
 
 
-def command_exists(command):
-    """Checks if a command exists."""
-    try:
-        subprocess.run(
-            ["command", "-v", command],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        return True
-    except subprocess.CalledProcessError:
-        return False
-
-
 @app.command()
 def install(
     repo_url: str = typer.Option(REPO_URL, help="The URL of the dotfiles repository."),
@@ -246,6 +422,7 @@ def install(
         DOTFILES_DIR, help="The directory to clone the dotfiles into."
     ),
     impure: bool = typer.Option(True, help="Use the --impure flag for home-manager."),
+    skip_customization: bool = typer.Option(False, help="Skip the customization step."),
 ):
     """Installs Nix, Home Manager, and applies the dotfiles configuration."""
     global REPO_URL, DOTFILES_DIR
@@ -259,7 +436,12 @@ def install(
         install_home_manager()
 
     clone_dotfiles()
+
+    if not skip_customization:
+        customize_dotfiles()
+
     apply_home_manager()
 
 
-app()
+if __name__ == "__main__":
+    app()
