@@ -50,8 +50,6 @@ This method uses a simple shell script to ensure Home Manager is installed and t
     curl -L https://raw.githubusercontent.com/hadronomy/dotfiles/main/install.sh | bash
     ```
 
-    **Important:** Replace `hadronomy/dotfiles` with your repository URL.
-
     This script will:
 
     *   Check if Home Manager is installed. If not, it will install it.
