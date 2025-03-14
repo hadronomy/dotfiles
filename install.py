@@ -7,6 +7,7 @@
 #   "rich",
 #   "pygithub",
 #   "requests",
+#   "psutil",
 # ]
 # ///
 
@@ -27,7 +28,7 @@ from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
 app = typer.Typer()
-console = Console()
+console = Console(force_terminal=True)  # Force terminal mode to ensure proper rendering
 
 DOTFILES_DIR = os.path.expanduser("~/.dotfiles")
 REPO_URL = "https://github.com/hadronomy/dotfiles"
@@ -377,6 +378,7 @@ def customize_dotfiles(dry_run=False, force_customize=False):
         )
 
     # Always collect user information, even in dry run mode
+    sys.stdout.flush()
     if force_customize or Confirm.ask(
         "Would you like to customize the dotfiles for your user?", default=True
     ):
@@ -397,22 +399,30 @@ def customize_dotfiles(dry_run=False, force_customize=False):
 def collect_user_info():
     """Collect user information for customization."""
     console.print("[bold]Collecting user information for customization...[/bold]")
+    console.print("")  # Add empty line for better readability
 
+    # Manually flush console before each prompt to ensure visibility
+    sys.stdout.flush()
     USER_CONFIG["username"] = Prompt.ask("Username", default=CURRENT_USER)
 
+    sys.stdout.flush()
     USER_CONFIG["git_name"] = Prompt.ask("Your full name (for Git config)", default="")
 
+    sys.stdout.flush()
     USER_CONFIG["git_email"] = Prompt.ask("Your email (for Git config)", default="")
 
     # OnePassword settings
+    sys.stdout.flush()
     USER_CONFIG["onepassword_disable"] = Confirm.ask(
         "Do you want to disable 1Password integration?", default=True
     )
 
     # Signing key options
-    if Confirm.ask("Would you like to use commit signing?", default=True):
-        USER_CONFIG["use_signing_key"] = True
+    sys.stdout.flush()
+    use_signing_key = Confirm.ask("Would you like to use commit signing?", default=True)
+    USER_CONFIG["use_signing_key"] = use_signing_key
 
+    if use_signing_key:
         # Ask which signing method to use
         signing_methods = {"1": "GPG", "2": "SSH"}
         console.print(
@@ -428,6 +438,7 @@ def collect_user_info():
             )
         )
 
+        sys.stdout.flush()
         signing_choice = Prompt.ask(
             "Select a signing method [1-2]", default="2", choices=["1", "2"]
         )
@@ -458,9 +469,12 @@ def gpg_key_options(config):
 
         console.print(table)
 
+        sys.stdout.flush()
         if Confirm.ask("Would you like to use an existing key?", default=True):
             # Fix: Use choices with Prompt instead of IntPrompt with min/max values
             choices = [str(i) for i in range(1, len(existing_gpg_keys) + 1)]
+
+            sys.stdout.flush()
             choice_str = Prompt.ask(
                 "Enter the number of the key to use", default="1", choices=choices
             )
@@ -469,6 +483,7 @@ def gpg_key_options(config):
             console.print(f"[green]Using GPG key: {config['git_signing_key']}[/green]")
 
             # Optionally add to GitHub
+            sys.stdout.flush()
             if Confirm.ask(
                 "Would you like to add this key to your GitHub account?", default=False
             ):
@@ -477,6 +492,7 @@ def gpg_key_options(config):
             return
 
     # Create a new GPG key if desired
+    sys.stdout.flush()
     if Confirm.ask("Would you like to create a new GPG key?", default=True):
         console.print("[bold]Creating new GPG key...[/bold]")
         key_id = create_gpg_key(config["git_name"], config["git_email"])
@@ -517,9 +533,12 @@ def ssh_key_options(config):
 
         console.print(table)
 
+        sys.stdout.flush()
         if Confirm.ask("Would you like to use an existing key?", default=True):
             # Fix: Use choices with Prompt instead of IntPrompt with min/max values
             choices = [str(i) for i in range(1, len(existing_ssh_keys) + 1)]
+
+            sys.stdout.flush()
             choice_str = Prompt.ask(
                 "Enter the number of the key to use", default="1", choices=choices
             )
@@ -528,6 +547,7 @@ def ssh_key_options(config):
             console.print(f"[green]Using SSH key: {config['git_signing_key']}[/green]")
 
             # Optionally add to GitHub
+            sys.stdout.flush()
             if Confirm.ask(
                 "Would you like to add this key to your GitHub account for signing?",
                 default=False,
@@ -537,6 +557,7 @@ def ssh_key_options(config):
             return
 
     # Create a new SSH key if desired
+    sys.stdout.flush()
     if Confirm.ask("Would you like to create a new SSH key for signing?", default=True):
         console.print("[bold]Creating new SSH key...[/bold]")
         key_path = create_ssh_key(config["git_email"])
@@ -862,6 +883,7 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"], key_path_o
             )
 
             # Use device flow authentication
+            sys.stdout.flush()
             if Confirm.ask(
                 "Would you like to authenticate with GitHub to add your key?",
                 default=True,
@@ -1377,23 +1399,29 @@ def handle_exit_signal(signum, frame):
 def is_run_from_install_sh():
     """Check if the script is being run from the install.sh wrapper."""
     # Check environment for a marker or inspect the stack
-    parent_process = None
     try:
+        # Try to import psutil
         import psutil
 
-        current_process = psutil.Process()
-        parent_process = current_process.parent()
-        if parent_process:
-            # Check if the parent process command contains install.sh
-            cmdline = " ".join(parent_process.cmdline()).lower()
-            return "install.sh" in cmdline
-    except (ImportError, psutil.Error):
-        # Fallback method if psutil is not available
         try:
-            # Check for an environment variable that could be set by install.sh
-            return os.environ.get("FROM_DOTFILES_INSTALLER") == "true"
+            current_process = psutil.Process()
+            parent_process = current_process.parent()
+            if parent_process:
+                # Check if the parent process command contains install.sh
+                cmdline = " ".join(parent_process.cmdline()).lower()
+                return "install.sh" in cmdline
         except Exception:
             pass
+    except ImportError:
+        # psutil is not available, fall through to other methods
+        pass
+
+    # Fallback method if psutil is not available or failed
+    try:
+        # Check for an environment variable that could be set by install.sh
+        return os.environ.get("FROM_DOTFILES_INSTALLER") == "true"
+    except Exception:
+        pass
 
     # As a last resort, check if we were invoked by curl/wget piping to bash
     try:
@@ -1414,7 +1442,13 @@ def cleanup(exit_code=0):
     script_path = os.path.abspath(__file__)
 
     # Only delete the script if we're being run from install.sh
-    if is_run_from_install_sh():
+    try:
+        is_from_installer = is_run_from_install_sh()
+    except Exception:
+        # If anything goes wrong detecting the source, assume we're not from install.sh
+        is_from_installer = False
+
+    if is_from_installer:
         console.print(
             f"[bold red]Installation failed! Removing script: {script_path}[/bold red]"
         )
@@ -1425,7 +1459,7 @@ def cleanup(exit_code=0):
             console.print(f"[bold red]Failed to remove script: {e}[/bold red]")
     else:
         console.print(
-            f"[bold red]Installation failed! Script not removed as it wasn't run from install.sh.[/bold red]"
+            "[bold red]Installation failed! Script not removed as it wasn't run from install.sh.[/bold red]"
         )
 
     sys.exit(exit_code)
