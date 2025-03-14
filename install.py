@@ -45,7 +45,7 @@ USER_CONFIG = {
 }
 
 
-def run_command(command, check=True, shell=False, dry_run=False):
+def run_command(command, check=True, shell=False, dry_run=False, env=None):
     """Runs a shell command and streams the output in real-time with rich formatting."""
     if not shell:
         cmd_str = " ".join(shlex.quote(arg) for arg in command)
@@ -66,6 +66,7 @@ def run_command(command, check=True, shell=False, dry_run=False):
             stderr=subprocess.PIPE,
             text=True,
             shell=shell,
+            env=env,  # Allow passing custom environment variables
         )
 
         while True:
@@ -164,29 +165,21 @@ def install_nix(dry_run=False):
             # Run the Nix installation script - try with sudo first, then fallback to regular user
             console.print("[yellow]Running Nix installer...[/yellow]")
             try:
-                run_command(["sudo", install_script_path], check=True)
-            except Exception as sudo_error:
-                console.print(
-                    f"[yellow]Sudo installation failed: {sudo_error}, trying without sudo...[/yellow]"
-                )
                 run_command([install_script_path], check=True)
-
-            # Refresh the environment
-            console.print("[bold]Refreshing environment...[/bold]")
-            # Source nix.sh and capture the environment
-            nix_profile_path = os.path.expanduser("~/.nix-profile/etc/profile.d/nix.sh")
-            if os.path.exists(nix_profile_path):
-                proc = subprocess.Popen(
-                    f"source {nix_profile_path} && env",
-                    stdout=subprocess.PIPE,
-                    shell=True,
+            except Exception as no_sudo_error:
+                console.print(
+                    f"[yellow]Installation failed without sudo: {no_sudo_error}, trying with sudo...[/yellow]"
                 )
-                # Update current process environment with new variables
-                for line in proc.stdout:
-                    line = line.decode().strip()
-                    if "=" in line:
-                        key, value = line.split("=", 1)
-                        os.environ[key] = value
+                try:
+                    run_command(["sudo", install_script_path], check=True)
+                except Exception as sudo_error:
+                    console.print(
+                        f"[yellow]Sudo installation failed: {sudo_error}, Nix installation unsuccessful.[/yellow]"
+                    )
+                    cleanup(1)  # Call cleanup to delete the script on failure
+            # Refresh the environment by sourcing Nix profile
+            console.print("[bold]Activating Nix environment...[/bold]")
+            source_nix_profile()
 
             # Add experimental features to nix.conf
             configure_nix_experimental_features()
@@ -197,9 +190,21 @@ def install_nix(dry_run=False):
             except Exception:
                 pass
 
-            console.print(
-                "[green]Nix installation complete. Please open a new terminal or source ~/.nix-profile/etc/profile.d/nix.sh for the changes to take effect.[/green]"
-            )
+            # Verify Nix is available
+            if verify_nix_installation():
+                console.print(
+                    "[green]Nix successfully installed and activated![/green]"
+                )
+            else:
+                console.print(
+                    "[yellow]Nix installed but not fully activated in current process.[/yellow]"
+                )
+                console.print(
+                    "[yellow]Attempting to reload environment and continue...[/yellow]"
+                )
+
+                # Try to reload the environment one more time with a more aggressive approach
+                force_reload_nix_env()
 
         except Exception as e:
             console.print(
@@ -221,6 +226,130 @@ def install_nix(dry_run=False):
     console.print(
         "[green]Nix installation complete. You may need to open a new terminal.[/green]"
     )
+
+
+def source_nix_profile():
+    """Source Nix profile and update environment variables in the current process."""
+    # Find and source nix.sh
+    possible_nix_profiles = [
+        os.path.expanduser("~/.nix-profile/etc/profile.d/nix.sh"),
+        "/etc/profile.d/nix.sh",
+        "/nix/var/nix/profiles/default/etc/profile.d/nix.sh",
+        "/root/.nix-profile/etc/profile.d/nix.sh",  # For root installations
+    ]
+
+    nix_profile_path = None
+    for profile in possible_nix_profiles:
+        if os.path.exists(profile):
+            nix_profile_path = profile
+            console.print(f"[green]Found Nix profile at {profile}[/green]")
+            break
+
+    if nix_profile_path:
+        # Source nix.sh and update environment variables
+        console.print(f"[yellow]Sourcing {nix_profile_path}...[/yellow]")
+        source_env = f"source {nix_profile_path} && env"
+        try:
+            proc = subprocess.Popen(
+                source_env,
+                stdout=subprocess.PIPE,
+                shell=True,
+                executable="/bin/bash",
+            )
+
+            # Update current process environment with new variables
+            for line in proc.stdout:
+                line = line.decode().strip()
+                if "=" in line:
+                    key, value = line.split("=", 1)
+                    os.environ[key] = value
+
+            # Update PATH with nix paths
+            if "PATH" in os.environ:
+                console.print(f"[dim]Updated PATH: {os.environ['PATH']}[/dim]")
+
+            # Ensure the sourced environment is immediately available
+            os.environ["NIXPKGS_ALLOW_UNFREE"] = "1"
+            os.environ["NIXPKGS_ALLOW_INSECURE"] = "1"
+
+            # Verify the sourcing worked by checking for nix commands
+            return verify_nix_installation()
+
+        except Exception as e:
+            console.print(f"[yellow]Error sourcing Nix profile: {e}[/yellow]")
+            return False
+    else:
+        console.print("[yellow]Could not find Nix profile to source.[/yellow]")
+        # Best effort: add common Nix paths to PATH
+        for nix_bin in [
+            "~/.nix-profile/bin",
+            "/nix/var/nix/profiles/default/bin",
+        ]:
+            expanded_path = os.path.expanduser(nix_bin)
+            if os.path.exists(expanded_path):
+                os.environ["PATH"] = f"{expanded_path}:{os.environ['PATH']}"
+                console.print(f"[green]Added {expanded_path} to PATH[/green]")
+
+        return False
+
+
+def force_reload_nix_env():
+    """Aggressively try to reload Nix environment when normal sourcing doesn't work."""
+    console.print("[yellow]Performing aggressive Nix environment reload...[/yellow]")
+
+    # Add all possible Nix binary locations to PATH
+    nix_bin_paths = [
+        "~/.nix-profile/bin",
+        "/nix/var/nix/profiles/default/bin",
+        "/run/current-system/sw/bin",  # NixOS specific
+    ]
+
+    for path in nix_bin_paths:
+        expanded_path = os.path.expanduser(path)
+        if os.path.exists(expanded_path):
+            os.environ["PATH"] = f"{expanded_path}:{os.environ['PATH']}"
+            console.print(f"[dim]Added {expanded_path} to PATH[/dim]")
+
+    # Set essential Nix environment variables
+    os.environ["NIX_PATH"] = (
+        f"nixpkgs={os.path.expanduser('~/.nix-defexpr/channels/nixpkgs')}"
+    )
+    os.environ["NIX_SSL_CERT_FILE"] = (
+        "/etc/ssl/certs/ca-certificates.crt"  # Common location
+    )
+
+    # Try to use a fallback method by executing nix to check if it's working
+    try:
+        subprocess.run(["nix", "--version"], check=True, capture_output=True, text=True)
+        console.print("[green]Nix command is now available![/green]")
+        return True
+    except Exception:
+        console.print("[red]Failed to activate Nix in current process.[/red]")
+        console.print(
+            "[yellow]You may need to run these commands manually in a new terminal:[/yellow]"
+        )
+        console.print("  source ~/.nix-profile/etc/profile.d/nix.sh")
+        console.print("  nix-channel --update")
+        return False
+
+
+def verify_nix_installation():
+    """Verify that Nix is properly installed and available."""
+    try:
+        # Try to run a simple nix command
+        result = subprocess.run(
+            ["nix", "--version"], check=False, capture_output=True, text=True
+        )
+
+        if result.returncode == 0:
+            console.print(f"[green]Nix verified: {result.stdout.strip()}[/green]")
+            return True
+        else:
+            console.print("[yellow]Nix command found but returned error.[/yellow]")
+            return False
+    except Exception:
+        console.print("[yellow]Could not verify Nix installation.[/yellow]")
+        return False
 
 
 def configure_nix_experimental_features():
@@ -308,6 +437,95 @@ def configure_nix_experimental_features():
         )
 
 
+def install_home_manager_standalone(dry_run=False):
+    """Install Home Manager directly using nix-env to avoid permission issues."""
+    if dry_run:
+        console.print(
+            "[bold yellow][DRY RUN][/bold yellow] Would install Home Manager directly"
+        )
+        return True
+
+    console.print("[bold]Installing Home Manager using standalone method...[/bold]")
+
+    # Try the simplest method first - direct install with nix-env
+    try:
+        console.print("[yellow]Trying nix-env direct installation...[/yellow]")
+        run_command(["nix-env", "-iA", "nixpkgs.home-manager"], check=True)
+        console.print(
+            "[green]Home Manager installed successfully using nix-env![/green]"
+        )
+        return True
+    except Exception as e:
+        console.print(f"[yellow]nix-env installation failed: {e}[/yellow]")
+
+    # Try the flake-based approach
+    try:
+        console.print("[yellow]Trying flake-based installation...[/yellow]")
+        run_command(
+            ["nix", "profile", "install", "github:nix-community/home-manager"],
+            check=True,
+        )
+        console.print(
+            "[green]Home Manager installed successfully using flakes![/green]"
+        )
+
+        # Add NIX_PATH to shell config
+        try:
+            shell_rc = None
+            if os.path.exists(os.path.expanduser("~/.zshrc")):
+                shell_rc = os.path.expanduser("~/.zshrc")
+            elif os.path.exists(os.path.expanduser("~/.bashrc")):
+                shell_rc = os.path.expanduser("~/.bashrc")
+
+            if shell_rc:
+                with open(shell_rc, "a") as f:
+                    f.write(
+                        "\n# Added by dotfiles installer\nexport NIX_PATH=$HOME/.nix-defexpr/channels:/nix/var/nix/profiles/per-user/root/channels${NIX_PATH:+:$NIX_PATH}\n"
+                    )
+                console.print(f"[green]Added NIX_PATH to {shell_rc}[/green]")
+        except Exception as e:
+            console.print(f"[yellow]Could not update shell configuration: {e}[/yellow]")
+
+        return True
+    except Exception as e:
+        console.print(f"[yellow]Flake-based installation failed: {e}[/yellow]")
+
+    # Try installing directly from GitHub without channels
+    try:
+        console.print("[yellow]Trying direct installation from GitHub...[/yellow]")
+        tmp_dir = os.path.expanduser("~/.dotfiles/tmp")
+        os.makedirs(tmp_dir, exist_ok=True)
+
+        # Clone the repository
+        repo_path = os.path.join(tmp_dir, "home-manager")
+        if os.path.exists(repo_path):
+            console.print(
+                "[yellow]Removing existing home-manager directory...[/yellow]"
+            )
+            import shutil
+
+            shutil.rmtree(repo_path)
+
+        run_command(
+            [
+                "git",
+                "clone",
+                "https://github.com/nix-community/home-manager.git",
+                repo_path,
+            ],
+            check=True,
+        )
+
+        # Run the install script
+        run_command(["nix-shell", "-A", "install", repo_path], check=True)
+        console.print("[green]Home Manager installed successfully from GitHub![/green]")
+        return True
+    except Exception as e:
+        console.print(f"[yellow]Direct GitHub installation failed: {e}[/yellow]")
+
+    return False
+
+
 def install_home_manager(dry_run=False):
     """Installs Home Manager."""
     if dry_run:
@@ -315,29 +533,238 @@ def install_home_manager(dry_run=False):
         return
 
     console.print("[bold]Installing Home Manager...[/bold]")
+
+    # First try standalone installation which is more likely to work with permission issues
+    if install_home_manager_standalone(dry_run):
+        console.print(
+            "[green]Home Manager installation completed successfully.[/green]"
+        )
+        return
+
+    # If standalone fails, try the traditional channel-based approach
     try:
-        run_command(
-            [
-                "nix-channel",
-                "--add",
-                "https://nixos.org/channels/nixpkgs-unstable",
-                "nixpkgs",
-            ]
-        )
-        run_command(
-            [
-                "nix-channel",
-                "--add",
-                "https://github.com/nix-community/home-manager/archive/master.tar.gz",
-                "home-manager",
-            ]
-        )
-        run_command(["nix-channel", "--update"])
-        run_command(["nix-shell", "<home-manager>", "-A", "install"])
+        # Try to find nix-channel command
+        nix_channel_path = None
+        for path in os.environ["PATH"].split(":"):
+            if os.path.exists(os.path.join(path, "nix-channel")):
+                nix_channel_path = os.path.join(path, "nix-channel")
+                break
+
+        # ...existing code...
+
+        # Standard installation with nix-channel
+        try:
+            # Check for potential permission issues with Nix lock file
+            if os.path.exists("/nix/var/nix/db/big-lock") and not os.access(
+                "/nix/var/nix/db/big-lock", os.W_OK
+            ):
+                console.print(
+                    "[yellow]Detected permission issues with Nix lock files.[/yellow]"
+                )
+                console.print(
+                    "[yellow]Trying single-user approach with separate commands...[/yellow]"
+                )
+
+                # Use single-user specific channels with environment variables
+                env = os.environ.copy()
+                env["NIX_USER_CHANNEL_ROOT"] = os.path.expanduser("~/.nix-channels")
+
+                # Add channels separately and ensure each completes before continuing
+                console.print("[yellow]Adding nixpkgs channel...[/yellow]")
+                result = subprocess.run(
+                    [
+                        nix_channel_path,
+                        "--add",
+                        "https://nixos.org/channels/nixpkgs-unstable",
+                        "nixpkgs",
+                    ],
+                    env=env,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    console.print(
+                        f"[red]Failed to add nixpkgs channel: {result.stderr}[/red]"
+                    )
+                    raise Exception("Failed to add nixpkgs channel")
+
+                console.print("[yellow]Adding home-manager channel...[/yellow]")
+                result = subprocess.run(
+                    [
+                        nix_channel_path,
+                        "--add",
+                        "https://github.com/nix-community/home-manager/archive/master.tar.gz",
+                        "home-manager",
+                    ],
+                    env=env,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    console.print(
+                        f"[red]Failed to add home-manager channel: {result.stderr}[/red]"
+                    )
+                    raise Exception("Failed to add home-manager channel")
+
+                console.print("[yellow]Updating channels...[/yellow]")
+                result = subprocess.run(
+                    [nix_channel_path, "--update"],
+                    env=env,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    console.print(
+                        f"[red]Failed to update channels: {result.stderr}[/red]"
+                    )
+                    raise Exception("Failed to update channels")
+            else:
+                # Standard approach - but run commands separately to ensure completion
+                result = subprocess.run(
+                    [
+                        nix_channel_path,
+                        "--add",
+                        "https://nixos.org/channels/nixpkgs-unstable",
+                        "nixpkgs",
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    console.print(
+                        f"[red]Failed to add nixpkgs channel: {result.stderr}[/red]"
+                    )
+
+                result = subprocess.run(
+                    [
+                        nix_channel_path,
+                        "--add",
+                        "https://github.com/nix-community/home-manager/archive/master.tar.gz",
+                        "home-manager",
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    console.print(
+                        f"[red]Failed to add home-manager channel: {result.stderr}[/red]"
+                    )
+
+                result = subprocess.run(
+                    [nix_channel_path, "--update"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    console.print(
+                        f"[red]Failed to update channels: {result.stderr}[/red]"
+                    )
+
+                    # If we failed to update, try with sudo
+                    if "Permission denied" in result.stderr:
+                        console.print(
+                            "[yellow]Permission denied, trying with sudo...[/yellow]"
+                        )
+                        try:
+                            sudo_result = subprocess.run(
+                                ["sudo", nix_channel_path, "--update"],
+                                check=False,
+                                capture_output=True,
+                                text=True,
+                            )
+                            if sudo_result.returncode != 0:
+                                console.print(
+                                    f"[red]Sudo update failed: {sudo_result.stderr}[/red]"
+                                )
+                                raise Exception("Failed to update channels with sudo")
+                        except Exception:
+                            # Fall back to standalone installation
+                            console.print(
+                                "[yellow]Channel update failed, falling back to standalone installation...[/yellow]"
+                            )
+                            if install_home_manager_standalone(dry_run):
+                                return
+                            raise Exception(
+                                "All home manager installation methods failed"
+                            )
+
+        except Exception as e:
+            if "Permission denied" in str(e):
+                console.print(
+                    "[yellow]Permission denied when updating channels.[/yellow]"
+                )
+                # Try the standalone installation as our best alternative
+                if install_home_manager_standalone(dry_run):
+                    return
+
+            # If we get here, no installation method worked
+            raise Exception(f"Home Manager installation failed: {e}")
+
+        # Find nix-shell and run the installer
+        nix_shell_cmd = "nix-shell"
+        for path in os.environ["PATH"].split(":"):
+            if os.path.exists(os.path.join(path, "nix-shell")):
+                nix_shell_cmd = os.path.join(path, "nix-shell")
+                break
+
+        try:
+            console.print("[yellow]Running home-manager installation...[/yellow]")
+            result = subprocess.run(
+                [nix_shell_cmd, "<home-manager>", "-A", "install"],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            if result.returncode != 0:
+                console.print(
+                    f"[red]Home Manager installation failed: {result.stderr}[/red]"
+                )
+                raise Exception("Home Manager installation failed")
+
+            console.print("[green]Home Manager installed successfully![/green]")
+        except Exception as e:
+            console.print(f"[yellow]Error during installation: {e}[/yellow]")
+            console.print("[yellow]Trying direct installation...[/yellow]")
+
+            # Try standalone installation as a last resort
+            if install_home_manager_standalone(dry_run):
+                return
+
+            # If we get here, nothing worked
+            raise Exception("All Home Manager installation methods failed")
+
     except Exception as e:
         console.print(f"[bold red]Error installing Home Manager: {e}[/bold red]")
+        console.print(
+            "[yellow]Please try installing Home Manager manually using one of these methods:[/yellow]"
+        )
+        console.print("\n[bold]Method 1: Direct installation with nix-env[/bold]")
+        console.print("Run: nix-env -iA nixpkgs.home-manager")
+
+        console.print("\n[bold]Method 2: Flake-based installation[/bold]")
+        console.print("Run: nix profile install github:nix-community/home-manager")
+        console.print("Then add to your shell config file:")
+        console.print(
+            "export NIX_PATH=$HOME/.nix-defexpr/channels:/nix/var/nix/profiles/per-user/root/channels${NIX_PATH:+:$NIX_PATH}"
+        )
+
+        console.print("\n[bold]Method 3: Traditional channel-based installation[/bold]")
+        console.print(
+            "1. Run: nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs"
+        )
+        console.print(
+            "2. Run: nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager"
+        )
+        console.print("3. Run: nix-channel --update")
+        console.print("4. Run: nix-shell '<home-manager>' -A install")
         sys.exit(1)
-    console.print("[green]Home Manager installed successfully.[/green]")
 
 
 def clone_dotfiles(dry_run=False):
@@ -896,7 +1323,7 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"], key_path_o
                     import requests
 
                     # GitHub OAuth Device Flow
-                    client_id = "4c1b8d54bc04094aa3c8"  # Client ID for a generic GitHub OAuth App
+                    client_id = "Iv1.5da81c42435d41c5"  # Client ID for a generic GitHub OAuth App
 
                     # Update scope to include ssh_signing_key permissions
                     scope = "admin:public_key admin:gpg_key admin:ssh_signing_key"
@@ -1479,6 +1906,9 @@ def install(
     dry_run: bool = typer.Option(
         False, help="Perform a dry run without making any changes."
     ),
+    standalone: bool = typer.Option(
+        False, help="Use standalone installation for Home Manager."
+    ),
 ):
     """Installs Nix, Home Manager, and applies the dotfiles configuration."""
     global REPO_URL, DOTFILES_DIR
@@ -1506,9 +1936,13 @@ def install(
         if not command_exists("nix", dry_run=dry_run):
             install_nix(dry_run=dry_run)
 
-        # Pass dry_run parameter to command_exists
+        # Check if home-manager needs to be installed
         if not command_exists("home-manager", dry_run=dry_run) and not dry_run:
-            install_home_manager(dry_run=dry_run)
+            if standalone:
+                # Use standalone method if explicitly requested
+                install_home_manager_standalone(dry_run=dry_run)
+            else:
+                install_home_manager(dry_run=dry_run)
 
         clone_dotfiles(dry_run=dry_run)
 

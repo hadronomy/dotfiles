@@ -1,0 +1,3 @@
+[tools]
+just = "latest"
+python = "3.12"
