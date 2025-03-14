@@ -1,6 +1,7 @@
 #!/usr/bin/env uv run
 
 # /// script
+# requires-python = ">=3.12"
 # dependencies = [
 #   "typer",
 #   "rich",
@@ -14,6 +15,7 @@ import os
 import platform
 import re
 import shlex
+import signal
 import subprocess
 import sys
 from typing import Literal
@@ -51,7 +53,7 @@ def run_command(command, check=True, shell=False, dry_run=False):
 
     if dry_run:
         console.print(
-            "[bold yellow][DRY RUN][/bold yellow] [bold blue]Would run:[/bold blue] {cmd_str}"
+            f"[bold yellow][DRY RUN][/bold yellow] [bold blue]Would run:[/bold blue] {cmd_str}"
         )
         return None
 
@@ -87,10 +89,14 @@ def run_command(command, check=True, shell=False, dry_run=False):
         console.print(
             f"[bold red]Command failed with error code {e.returncode}[/bold red]"
         )
-        sys.exit(1)
+        if not dry_run:
+            raise  # Re-raise to handle in the calling function
+        return None
     except FileNotFoundError as e:
         console.print(f"[bold red]Command not found: {e}[/bold red]")
-        sys.exit(1)
+        if not dry_run:
+            raise  # Re-raise to handle in the calling function
+        return None
 
 
 def install_nix(dry_run=False):
@@ -106,90 +112,199 @@ def install_nix(dry_run=False):
 
     if system == "Linux":
         try:
+            # Use a temporary directory in the user's home directory to avoid permission issues
+            temp_dir = os.path.expanduser("~/.dotfiles/tmp")
+            os.makedirs(temp_dir, exist_ok=True)
+            install_script_path = os.path.join(temp_dir, "nix_install.sh")
+
             # Download the Nix installation script
-            run_command(
-                [
-                    "curl",
-                    "-L",
-                    "-o",
-                    "/tmp/nix_install.sh",
-                    "https://nixos.org/nix/install",
-                ],
-                check=True,
-            )
-            # Run the Nix installation script
-            run_command(["sudo", "sh", "/tmp/nix_install.sh"], check=True)
+            console.print("[yellow]Downloading Nix installer...[/yellow]")
+            try:
+                # Try with curl first (most robust for redirects)
+                run_command(
+                    [
+                        "curl",
+                        "-L",
+                        "-o",
+                        install_script_path,
+                        "https://nixos.org/nix/install",
+                    ],
+                    check=True,
+                )
+            except Exception as curl_error:
+                console.print(
+                    f"[yellow]Curl failed: {curl_error}, trying wget...[/yellow]"
+                )
+                try:
+                    # Try wget as backup
+                    run_command(
+                        [
+                            "wget",
+                            "-O",
+                            install_script_path,
+                            "https://nixos.org/nix/install",
+                        ],
+                        check=True,
+                    )
+                except Exception as wget_error:
+                    # Last resort, try Python's urllib
+                    console.print(
+                        f"[yellow]Wget failed: {wget_error}, using Python...[/yellow]"
+                    )
+                    import urllib.request
+
+                    urllib.request.urlretrieve(
+                        "https://nixos.org/nix/install", install_script_path
+                    )
+
+            # Make the script executable
+            os.chmod(install_script_path, 0o755)
+
+            # Run the Nix installation script - try with sudo first, then fallback to regular user
+            console.print("[yellow]Running Nix installer...[/yellow]")
+            try:
+                run_command(["sudo", install_script_path], check=True)
+            except Exception as sudo_error:
+                console.print(
+                    f"[yellow]Sudo installation failed: {sudo_error}, trying without sudo...[/yellow]"
+                )
+                run_command([install_script_path], check=True)
 
             # Refresh the environment
             console.print("[bold]Refreshing environment...[/bold]")
             # Source nix.sh and capture the environment
-            proc = subprocess.Popen(
-                f"source {os.path.expanduser('~')}/.nix-profile/etc/profile.d/nix.sh && env",
-                stdout=subprocess.PIPE,
-                shell=True,
-            )
-            # Update current process environment with new variables
-            for line in proc.stdout:
-                line = line.decode().strip()
-                if "=" in line:
-                    key, value = line.split("=", 1)
-                    os.environ[key] = value
+            nix_profile_path = os.path.expanduser("~/.nix-profile/etc/profile.d/nix.sh")
+            if os.path.exists(nix_profile_path):
+                proc = subprocess.Popen(
+                    f"source {nix_profile_path} && env",
+                    stdout=subprocess.PIPE,
+                    shell=True,
+                )
+                # Update current process environment with new variables
+                for line in proc.stdout:
+                    line = line.decode().strip()
+                    if "=" in line:
+                        key, value = line.split("=", 1)
+                        os.environ[key] = value
 
             # Add experimental features to nix.conf
-            nix_conf_dir = os.path.expanduser("~/.config/nix")
-            nix_conf_file = os.path.join(nix_conf_dir, "nix.conf")
+            configure_nix_experimental_features()
 
-            # Check if ~/.config/nix exists, if not, check /etc/nix
-            if not os.path.exists(nix_conf_dir):
-                nix_conf_dir = "/etc/nix"
-                nix_conf_file = os.path.join(nix_conf_dir, "nix.conf")
-
-            # Create the directory if it doesn't exist
-            if not os.path.exists(nix_conf_dir):
-                os.makedirs(nix_conf_dir, exist_ok=True)
-
-            # Check if the line already exists in the file
-            line_exists = False
-            if os.path.exists(nix_conf_file):
-                with open(nix_conf_file, "r") as f:
-                    for line in f:
-                        if "experimental-features = nix-command flakes" in line:
-                            line_exists = True
-                            break
-
-            if not line_exists:
-                with open(nix_conf_file, "a") as f:
-                    f.write("experimental-features = nix-command flakes\n")
-                console.print("[green]Added experimental features to nix.conf.[/green]")
-            else:
-                console.print(
-                    "[yellow]Experimental features already present in nix.conf.[/yellow]"
-                )
+            # Clean up
+            try:
+                os.remove(install_script_path)
+            except Exception:
+                pass
 
             console.print(
-                "[green]Nix installation complete.  Please open a new terminal or source ~/.nix-profile/etc/profile.d/nix.sh for the changes to take effect.[/green]"
+                "[green]Nix installation complete. Please open a new terminal or source ~/.nix-profile/etc/profile.d/nix.sh for the changes to take effect.[/green]"
             )
 
         except Exception as e:
             console.print(
                 f"[bold red]Error installing Nix: {str(e).replace(chr(92), chr(92) * 2).replace('[', '').replace(']', '')}[/bold red]"
             )
-            sys.exit(1)
+            cleanup(1)  # Call cleanup to delete the script on failure
 
     elif system == "Darwin":  # macOS
         console.print(
-            "[bold yellow]Installing Nix on macOS requires manual steps.  Please see https://nixos.org/download.html[/bold yellow]"
+            "[bold yellow]Installing Nix on macOS requires manual steps. Please see https://nixos.org/download.html[/bold yellow]"
         )
-        sys.exit(1)
+        cleanup(1)  # Call cleanup to delete the script on failure
     else:
         console.print(
             "[bold red]Unsupported operating system for automatic Nix installation.[/bold red]"
         )
-        sys.exit(1)
+        cleanup(1)  # Call cleanup to delete the script on failure
 
     console.print(
-        "[green]Nix installation complete.  You may need to open a new terminal.[/green]"
+        "[green]Nix installation complete. You may need to open a new terminal.[/green]"
     )
+
+
+def configure_nix_experimental_features():
+    """Configure experimental features in nix.conf."""
+    try:
+        # First try user's config directory
+        nix_conf_dir = os.path.expanduser("~/.config/nix")
+        nix_conf_file = os.path.join(nix_conf_dir, "nix.conf")
+
+        # Check if ~/.config/nix exists, if not, check /etc/nix
+        if not os.path.exists(nix_conf_dir):
+            # Try to create user directory first
+            try:
+                os.makedirs(nix_conf_dir, exist_ok=True)
+            except Exception:
+                # Fall back to /etc/nix if user directory creation fails
+                nix_conf_dir = "/etc/nix"
+                nix_conf_file = os.path.join(nix_conf_dir, "nix.conf")
+
+        # Create the directory if it doesn't exist
+        if not os.path.exists(nix_conf_dir):
+            try:
+                os.makedirs(nix_conf_dir, exist_ok=True)
+            except Exception as e:
+                console.print(f"[yellow]Could not create {nix_conf_dir}: {e}[/yellow]")
+                # Try to use a user-specific configuration as fallback
+                nix_conf_dir = os.path.expanduser("~/.dotfiles/nix")
+                os.makedirs(nix_conf_dir, exist_ok=True)
+                nix_conf_file = os.path.join(nix_conf_dir, "nix.conf")
+                console.print(
+                    f"[yellow]Using fallback configuration at {nix_conf_file}[/yellow]"
+                )
+
+        # Check if the experimental features line already exists in the file
+        line_exists = False
+        if os.path.exists(nix_conf_file):
+            try:
+                with open(nix_conf_file, "r") as f:
+                    for line in f:
+                        if "experimental-features = nix-command flakes" in line:
+                            line_exists = True
+                            break
+            except Exception as e:
+                console.print(f"[yellow]Could not read {nix_conf_file}: {e}[/yellow]")
+                line_exists = False
+
+        if not line_exists:
+            try:
+                with open(nix_conf_file, "a") as f:
+                    f.write("experimental-features = nix-command flakes\n")
+                console.print("[green]Added experimental features to nix.conf.[/green]")
+            except Exception as e:
+                console.print(
+                    f"[yellow]Could not write to {nix_conf_file}: {e}[/yellow]"
+                )
+                # If writing fails, create a user environment variable as workaround
+                os.environ["NIX_CONFIG"] = "experimental-features = nix-command flakes"
+                console.print(
+                    "[yellow]Set NIX_CONFIG environment variable as fallback.[/yellow]"
+                )
+                # Also append to .bashrc or .zshrc for future sessions
+                shell_rc_file = os.path.expanduser("~/.bashrc")
+                if os.path.exists(os.path.expanduser("~/.zshrc")):
+                    shell_rc_file = os.path.expanduser("~/.zshrc")
+
+                try:
+                    with open(shell_rc_file, "a") as f:
+                        f.write(
+                            '\n# Added by dotfiles installer\nexport NIX_CONFIG="experimental-features = nix-command flakes"\n'
+                        )
+                    console.print(
+                        f"[green]Added NIX_CONFIG to {shell_rc_file}.[/green]"
+                    )
+                except Exception:
+                    console.print(
+                        "[yellow]Could not add NIX_CONFIG to shell config.[/yellow]"
+                    )
+        else:
+            console.print(
+                "[yellow]Experimental features already present in nix.conf.[/yellow]"
+            )
+    except Exception as e:
+        console.print(
+            f"[yellow]Error configuring Nix experimental features: {e}[/yellow]"
+        )
 
 
 def install_home_manager(dry_run=False):
@@ -1253,6 +1368,69 @@ def apply_home_manager(dry_run=False):
     console.print("[green]Dotfiles applied successfully![/green]")
 
 
+def handle_exit_signal(signum, frame):
+    """Handle exit signals by cleaning up and deleting the script."""
+    console.print("\n[bold red]Received termination signal. Cleaning up...[/bold red]")
+    cleanup(1)
+
+
+def is_run_from_install_sh():
+    """Check if the script is being run from the install.sh wrapper."""
+    # Check environment for a marker or inspect the stack
+    parent_process = None
+    try:
+        import psutil
+
+        current_process = psutil.Process()
+        parent_process = current_process.parent()
+        if parent_process:
+            # Check if the parent process command contains install.sh
+            cmdline = " ".join(parent_process.cmdline()).lower()
+            return "install.sh" in cmdline
+    except (ImportError, psutil.Error):
+        # Fallback method if psutil is not available
+        try:
+            # Check for an environment variable that could be set by install.sh
+            return os.environ.get("FROM_DOTFILES_INSTALLER") == "true"
+        except Exception:
+            pass
+
+    # As a last resort, check if we were invoked by curl/wget piping to bash
+    try:
+        import traceback
+
+        stack = traceback.extract_stack()
+        for frame in stack:
+            if "install.sh" in frame.filename:
+                return True
+    except Exception:
+        pass
+
+    return False
+
+
+def cleanup(exit_code=0):
+    """Clean up by deleting the script and exiting with the specified code."""
+    script_path = os.path.abspath(__file__)
+
+    # Only delete the script if we're being run from install.sh
+    if is_run_from_install_sh():
+        console.print(
+            f"[bold red]Installation failed! Removing script: {script_path}[/bold red]"
+        )
+        try:
+            os.remove(script_path)
+            console.print("[yellow]Script removed successfully.[/yellow]")
+        except Exception as e:
+            console.print(f"[bold red]Failed to remove script: {e}[/bold red]")
+    else:
+        console.print(
+            f"[bold red]Installation failed! Script not removed as it wasn't run from install.sh.[/bold red]"
+        )
+
+    sys.exit(exit_code)
+
+
 @app.command()
 def install(
     repo_url: str = typer.Option(REPO_URL, help="The URL of the dotfiles repository."),
@@ -1273,40 +1451,54 @@ def install(
     REPO_URL = repo_url
     DOTFILES_DIR = dotfiles_dir
 
-    # Check for incompatible flags
-    if skip_customization and customize:
-        console.print(
-            "[bold red]Error: --skip-customization and --customize cannot be used together.[/bold red]"
-        )
-        sys.exit(1)
+    # Set up signal handlers for clean termination
+    signal.signal(signal.SIGINT, handle_exit_signal)  # Ctrl+C
+    signal.signal(signal.SIGTERM, handle_exit_signal)  # Termination signal
 
-    if dry_run:
-        console.print(
-            "[bold yellow]Running in DRY RUN mode. No changes will be made.[/bold yellow]"
-        )
+    try:
+        # Check for incompatible flags
+        if skip_customization and customize:
+            console.print(
+                "[bold red]Error: --skip-customization and --customize cannot be used together.[/bold red]"
+            )
+            cleanup(1)
 
-    # Pass dry_run parameter to command_exists
-    if not command_exists("nix", dry_run=dry_run):
-        install_nix(dry_run=dry_run)
+        if dry_run:
+            console.print(
+                "[bold yellow]Running in DRY RUN mode. No changes will be made.[/bold yellow]"
+            )
 
-    # Pass dry_run parameter to command_exists
-    if not command_exists("home-manager", dry_run=dry_run) and not dry_run:
-        install_home_manager(dry_run=dry_run)
+        # Pass dry_run parameter to command_exists
+        if not command_exists("nix", dry_run=dry_run):
+            install_nix(dry_run=dry_run)
 
-    clone_dotfiles(dry_run=dry_run)
+        # Pass dry_run parameter to command_exists
+        if not command_exists("home-manager", dry_run=dry_run) and not dry_run:
+            install_home_manager(dry_run=dry_run)
 
-    if customize:
-        customize_dotfiles(dry_run=dry_run, force_customize=True)
-    elif not skip_customization:
-        customize_dotfiles(dry_run=dry_run)
+        clone_dotfiles(dry_run=dry_run)
 
-    apply_home_manager(dry_run=dry_run)
+        if customize:
+            customize_dotfiles(dry_run=dry_run, force_customize=True)
+        elif not skip_customization:
+            customize_dotfiles(dry_run=dry_run)
 
-    if dry_run:
-        console.print(
-            "[bold yellow]Dry run complete. No changes were made.[/bold yellow]"
-        )
+        apply_home_manager(dry_run=dry_run)
+
+        if dry_run:
+            console.print(
+                "[bold yellow]Dry run complete. No changes were made.[/bold yellow]"
+            )
+
+    except Exception as e:
+        console.print(f"[bold red]Installation failed with error: {e}[/bold red]")
+        if not dry_run:
+            cleanup(1)
 
 
 if __name__ == "__main__":
-    app()
+    try:
+        app()
+    except Exception as e:
+        console.print(f"[bold red]Fatal error: {e}[/bold red]")
+        cleanup(1)

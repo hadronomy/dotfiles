@@ -6,6 +6,9 @@ set -euo pipefail
 REPO_URL="https://github.com/hadronomy/dotfiles" # Replace with your repo URL
 INSTALL_PY_URL="${REPO_URL}/raw/main/install.py"
 
+# Set environment variable to indicate script is being run from installer
+export FROM_DOTFILES_INSTALLER="true"
+
 # Function to check for uv and get its path
 get_uv_path() {
   if command -v uv &> /dev/null; then
