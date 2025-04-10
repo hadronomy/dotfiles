@@ -16,7 +16,7 @@
         "cargo:cargo-binstall" = "latest";
         "cargo:cargo-edit" = "latest";
         watchexec = "latest";
-        "asdf:CanRau/asdf-ni" = "latest";
+        "npm:@antfu/ni" = "latest";
         dotnet = "latest";
       };
       settings.activate_aggresive = true;
