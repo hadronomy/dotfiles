@@ -51,7 +51,7 @@ in
             set -g @catppuccin_pane_default_fill "number"
             set -g @catppuccin_pane_number_position "left" # right, left
 
-            set -g @catppuccin_window_status_style "basic" # basic, rounded, slanted, custom, or none
+            set -g @catppuccin_window_status_style "rounded" # basic, rounded, slanted, custom, or none
             set -g @catppuccin_window_text_color "#{@thm_surface_0}"
             set -g @catppuccin_window_number_color "#{@thm_overlay_2}"
             set -g @catppuccin_window_text " #T"
