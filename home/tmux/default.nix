@@ -32,6 +32,8 @@ in
         tmux-fzf
         fzf-url
         vim-tmux-navigator
+        cpu
+        battery
         {
           plugin = catppuccin;
           extraConfig = ''
