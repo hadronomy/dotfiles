@@ -14,6 +14,7 @@
         "cargo:cargo-dist" = "latest";
         "cargo:cargo-mutants" = "latest";
         "cargo:cargo-binstall" = "latest";
+        "cargo:cargo-binutils" = "latest";
         "cargo:cargo-edit" = "latest";
         watchexec = "latest";
         "npm:@antfu/ni" = "latest";
