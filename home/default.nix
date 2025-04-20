@@ -52,6 +52,7 @@ in
     pixi
     superfile
     ngrok
+    nh
   ];
 
   # This value determines the Home Manager release that your configuration is
