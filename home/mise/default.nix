@@ -19,6 +19,8 @@
         watchexec = "latest";
         "npm:@antfu/ni" = "latest";
         dotnet = "latest";
+        zig = "0.14.0";
+        zls = "0.14.0";
       };
       settings.activate_aggresive = true;
     };

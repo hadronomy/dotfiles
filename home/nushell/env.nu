@@ -16,6 +16,7 @@ $env.FZF_CTRL_T_COMMAND = $env.FZF_DEFAULT_COMMAND
 $env.PATH = ( 
   $env.PATH 
     | split row (char esep)
+    | where { |path| not ($path | str starts-with "/mnt/c") }
     | append /usr/local/bin
     | append ($env.CARGO_HOME | path join bin)
     | prepend ($env.PNPM_HOME)
@@ -25,5 +26,7 @@ $env.PATH = (
     | append ($env.HOME | path join .rvm bin)
     | append ($env.HOME | path join .bun bin)
     | append ($env.HOME | path join android-sdk cmdline-tools bin)
+    | append "/mnt/c/Program Files/Microsoft VS Code/bin"
+    | append "/mnt/c/Windows/System32/OpenSSH"
     | uniq
 )
