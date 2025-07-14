@@ -120,7 +120,7 @@
 
         modules = [
           ./home
-          catppuccin.homeManagerModules.catppuccin
+          catppuccin.homeModules.catppuccin
         ] ++ builtins.attrValues self.homeManagerModules;
       };
 
