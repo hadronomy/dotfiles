@@ -37,6 +37,16 @@ def se [
   nvim (fzf -m --preview "bat --color=always {}" --walker-root $path)
 }
 
+# The `google` command searches Google via a Gemini AI prompt and summarizes results.
+# It requires the 'gemini' command-line tool to be installed and configured.
+def google [
+    query: string # The search query to pass to Google.
+] {
+    let gemini_prompt = $"Search google for <query>($query)</query> and summarize the results"
+    let search_results = (^gemini -p $"($gemini_prompt)") | lines | str join " "
+    print $"Search results summary for: ($query)\n\n($search_results)"
+}
+
 # use bash-env as a module rather than plugin
 # This is replaced by nix with the correct path
 # use NIX_BASH_ENV_NU_MODULE
