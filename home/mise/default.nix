@@ -22,6 +22,7 @@
           dotnet = "latest";
           zig = "0.14.0";
           zls = "0.14.0";
+          "npm:@google/gemini-cli" = "latest";
         };
         settings = {
           idiomatic_version_file_enable_tools = [
