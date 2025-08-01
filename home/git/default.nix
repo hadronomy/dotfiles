@@ -9,6 +9,7 @@ in
   # something like what catppuccin/nix does
   programs.git = {
     enable = true;
+    ignores = import ./gitignore_global.nix;
     iniContent = {
       gpg = {
         format = mkForce "ssh";
