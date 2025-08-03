@@ -29,6 +29,9 @@ $env.config = {
     ]
 }
 
+# Alises / tools
+alias y = yazi
+
 # Uses fzf to search for a file in the current directory or
 # the directory passed as an argument
 def se [
