@@ -19,7 +19,7 @@ User wants to commit current local changes, reconcile with remote (prioritizing 
 ## TODOs
 
 ### Phase 1: Git Reconciliation
-- [ ] 1. Commit and Reconcile
+- [x] 1. Commit and Reconcile
   **What to do**:
   - `git add .`
   - `git commit -m "chore: save local changes before reconciliation"`
