@@ -64,7 +64,7 @@ The `install.py` script is the entry point for bootstrapping the dotfiles. It cu
   - Ensure `shlex.quote` is used correctly.
   - Improve error reporting.
 
-- [ ] 6. Implement Delightful UX
+- [x] 6. Implement Delightful UX
   **What to do**:
   - Use `console.status("Installing Nix...")` for long-running operations.
   - Use `rich.panel` to group output sections (e.g., "Configuration", "Installation").

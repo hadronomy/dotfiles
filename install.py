@@ -88,7 +88,7 @@ def run_command(
 
     if dry_run:
         console.print(
-            "[bold yellow][DRY RUN][/bold yellow] [bold blue]Would "
+            "[bold yellow]⚠️  [DRY RUN][/bold yellow] [bold blue]Would "
             f"run:[/bold blue] {cmd_str}"
         )
         return None
@@ -156,11 +156,12 @@ def install_nix(ctx: InstallContext):
     """Installs Nix package manager."""
     if ctx.dry_run:
         ctx.console.print(
-            "[bold yellow][DRY RUN][/bold yellow] Would install Nix package manager"
+            "[bold yellow]⚠️  [DRY RUN][/bold yellow] Would install Nix package manager"
         )
         return
 
-    ctx.console.print("[bold]Nix not found. Installing...[/bold]")
+    with ctx.console.status("[bold cyan]Installing Nix package manager...[/bold cyan]"):
+        ctx.console.print("[bold]Nix not found. Installing...[/bold]")
     system = platform.system()
 
     if system == "Linux":
@@ -572,11 +573,12 @@ def install_home_manager(ctx: InstallContext):
     """Installs Home Manager."""
     if ctx.dry_run:
         ctx.console.print(
-            "[bold yellow][DRY RUN][/bold yellow] Would install Home Manager"
+            "[bold yellow]⚠️  [DRY RUN][/bold yellow] Would install Home Manager"
         )
         return
 
-    ctx.console.print("[bold]Installing Home Manager...[/bold]")
+    with ctx.console.status("[bold cyan]Installing Home Manager...[/bold cyan]"):
+        ctx.console.print("[bold]Installing Home Manager...[/bold]")
 
     if install_home_manager_standalone(ctx.dry_run):
         ctx.console.print(
@@ -810,24 +812,33 @@ def clone_dotfiles(ctx: InstallContext):
     """Clones the dotfiles repository."""
     if ctx.dry_run:
         ctx.console.print(
-            "[bold yellow][DRY RUN][/bold yellow] Would clone "
+            "[bold yellow]⚠️  [DRY RUN][/bold yellow] Would clone "
             f"{ctx.repo_url} to {ctx.dotfiles_dir}"
         )
         return
 
     if not ctx.dotfiles_dir.exists():
-        ctx.console.print("[bold]Cloning dotfiles repository...[/bold]")
-        ctx.dotfiles_dir.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            run_command(
-                ["git", "clone", "--depth", "1", ctx.repo_url, str(ctx.dotfiles_dir)],
-                console=ctx.console,
-            )
-        except Exception as e:
-            ctx.console.print(f"[bold red]Error cloning dotfiles: {e}[/bold red]")
-            sys.exit(1)
+        with ctx.console.status(
+            "[bold cyan]Cloning dotfiles repository...[/bold cyan]"
+        ):
+            ctx.dotfiles_dir.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                run_command(
+                    [
+                        "git",
+                        "clone",
+                        "--depth",
+                        "1",
+                        ctx.repo_url,
+                        str(ctx.dotfiles_dir),
+                    ],
+                    console=ctx.console,
+                )
+            except Exception as e:
+                ctx.console.print(f"[bold red]Error cloning dotfiles: {e}[/bold red]")
+                sys.exit(1)
     else:
-        ctx.console.print("[bold]Dotfiles repository already exists.[/bold]")
+        ctx.console.print("[bold]✓ Dotfiles repository already exists.[/bold]")
 
 
 def customize_dotfiles(ctx: InstallContext, force_customize=False):
@@ -1973,6 +1984,17 @@ def install(
     signal.signal(signal.SIGTERM, handle_exit_signal)
 
     try:
+        # Display welcome panel
+        ctx.console.print(
+            Panel.fit(
+                "[bold cyan]Welcome to Dotfiles Installation[/bold cyan]\n\n"
+                "This script will install Nix, Home Manager, and apply your\n"
+                "dotfiles configuration.",
+                title="🚀 Setup",
+                border_style="cyan",
+            )
+        )
+
         if skip_customization and customize:
             ctx.console.print(
                 "[bold red]Error: --skip-customization and --customize "
@@ -1982,7 +2004,7 @@ def install(
 
         if dry_run:
             ctx.console.print(
-                "[bold yellow]Running in DRY RUN mode. No changes will be "
+                "[bold yellow]⚠️  Running in DRY RUN mode. No changes will be "
                 "made.[/bold yellow]"
             )
 
