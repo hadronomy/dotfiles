@@ -143,3 +143,67 @@ def install_nix(ctx: InstallContext):
     run_command(..., dry_run=ctx.dry_run, console=ctx.console)
 ```
 
+
+## Task 4: Pathlib Migration (2026-01-26)
+
+### Changes Made
+- Added `from pathlib import Path` import
+- Updated `InstallContext.dotfiles_dir` from `str` to `Path`
+- Replaced ~20 instances of `os.path.expanduser()` with `Path.home() / "..."`
+- Replaced ~15 instances of `os.path.join()` with Path `/` operator
+- Replaced ~25 instances of `os.path.exists()` with `Path.exists()`
+- Replaced ~10 instances of `os.makedirs()` with `Path.mkdir(parents=True, exist_ok=True)`
+- Replaced 5 instances of `os.remove()` with `Path.unlink(missing_ok=True)`
+- Replaced 1 instance of `os.chmod()` with `Path.chmod()`
+- Replaced 1 instance of `os.listdir()` with `Path.iterdir()`
+- Kept `os.walk()` as-is (wrapped ctx.dotfiles_dir in str() for compatibility)
+- Kept `os.access()` as-is (no pathlib equivalent)
+
+### Critical Wrapping Pattern
+**IMPORTANT**: All Path objects must be wrapped in `str()` when passed to:
+- `subprocess.run()` / `subprocess.Popen()` / `run_command()`
+- `shutil.rmtree()`
+- `urllib.request.urlretrieve()`
+- Any external command-line tool
+
+Examples:
+```python
+# CORRECT:
+run_command(["git", "clone", repo_url, str(ctx.dotfiles_dir)])
+shutil.rmtree(str(repo_path))
+subprocess.run(["gpg", "--batch", "--generate-key", str(batch_file)])
+
+# WRONG:
+run_command(["git", "clone", repo_url, ctx.dotfiles_dir])  # Will fail!
+```
+
+### os.walk() Decision
+Kept `os.walk()` as-is in `replace_username_in_files()` because:
+1. Function iterates over potentially large directory tree
+2. `os.walk()` is well-tested and efficient for this use case
+3. Wrapped `ctx.dotfiles_dir` in `str()` for compatibility: `os.walk(str(ctx.dotfiles_dir))`
+4. Converting to `Path.rglob()` would require significant refactoring of the loop logic
+
+### Path Operations Mapping
+| Old (os.path) | New (pathlib) |
+|---------------|---------------|
+| `os.path.expanduser("~/foo")` | `Path.home() / "foo"` |
+| `os.path.join(a, b, c)` | `Path(a) / b / c` |
+| `os.path.exists(path)` | `Path(path).exists()` |
+| `os.makedirs(path, exist_ok=True)` | `Path(path).mkdir(parents=True, exist_ok=True)` |
+| `os.remove(path)` | `Path(path).unlink(missing_ok=True)` |
+| `os.chmod(path, mode)` | `Path(path).chmod(mode)` |
+| `os.listdir(dir)` | `Path(dir).iterdir()` |
+| `os.path.dirname(path)` | `Path(path).parent` |
+| `os.path.abspath(__file__)` | `Path(__file__).resolve()` |
+
+### Verification
+- ✅ `python3 -m py_compile install.py` passes
+- ✅ `./install.py --dry-run` works correctly
+- ✅ All Path objects properly wrapped in str() for external calls
+
+### Benefits
+- More readable path operations (using `/` operator)
+- Type safety (Path objects vs strings)
+- Cross-platform compatibility (pathlib handles OS differences)
+- Modern Python idioms (pathlib is the recommended approach since Python 3.4)

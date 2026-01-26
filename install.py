@@ -20,6 +20,7 @@ import signal
 import subprocess
 import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Literal
 
 import typer
@@ -40,7 +41,7 @@ class InstallContext:
 
     dry_run: bool = False
     console: Console = field(default_factory=Console)
-    dotfiles_dir: str = field(default_factory=lambda: os.path.expanduser("~/.dotfiles"))
+    dotfiles_dir: Path = field(default_factory=lambda: Path.home() / ".dotfiles")
     repo_url: str = "https://github.com/hadronomy/dotfiles"
     user_config: dict = field(
         default_factory=lambda: {
@@ -131,9 +132,9 @@ def install_nix(ctx: InstallContext):
 
     if system == "Linux":
         try:
-            temp_dir = os.path.expanduser("~/.dotfiles/tmp")
-            os.makedirs(temp_dir, exist_ok=True)
-            install_script_path = os.path.join(temp_dir, "nix_install.sh")
+            temp_dir = Path.home() / ".dotfiles" / "tmp"
+            temp_dir.mkdir(parents=True, exist_ok=True)
+            install_script_path = temp_dir / "nix_install.sh"
 
             ctx.console.print("[yellow]Downloading Nix installer...[/yellow]")
             try:
@@ -142,7 +143,7 @@ def install_nix(ctx: InstallContext):
                         "curl",
                         "-L",
                         "-o",
-                        install_script_path,
+                        str(install_script_path),
                         "https://nixos.org/nix/install",
                     ],
                     check=True,
@@ -157,7 +158,7 @@ def install_nix(ctx: InstallContext):
                         [
                             "wget",
                             "-O",
-                            install_script_path,
+                            str(install_script_path),
                             "https://nixos.org/nix/install",
                         ],
                         check=True,
@@ -170,14 +171,14 @@ def install_nix(ctx: InstallContext):
                     import urllib.request
 
                     urllib.request.urlretrieve(
-                        "https://nixos.org/nix/install", install_script_path
+                        "https://nixos.org/nix/install", str(install_script_path)
                     )
 
-            os.chmod(install_script_path, 0o755)
+            install_script_path.chmod(0o755)
 
             ctx.console.print("[yellow]Running Nix installer...[/yellow]")
             try:
-                run_command([install_script_path], check=True, console=ctx.console)
+                run_command([str(install_script_path)], check=True, console=ctx.console)
             except Exception as no_sudo_error:
                 ctx.console.print(
                     "[yellow]Installation failed without sudo: "
@@ -185,7 +186,9 @@ def install_nix(ctx: InstallContext):
                 )
                 try:
                     run_command(
-                        ["sudo", install_script_path], check=True, console=ctx.console
+                        ["sudo", str(install_script_path)],
+                        check=True,
+                        console=ctx.console,
                     )
                 except Exception as sudo_error:
                     ctx.console.print(
@@ -201,7 +204,7 @@ def install_nix(ctx: InstallContext):
             configure_nix_experimental_features()
 
             try:
-                os.remove(install_script_path)
+                install_script_path.unlink(missing_ok=True)
             except Exception:
                 pass
 
@@ -249,22 +252,22 @@ def source_nix_profile():
     """Source Nix profile and update environment variables in the current
     process."""
     possible_nix_profiles = [
-        os.path.expanduser("~/.nix-profile/etc/profile.d/nix.sh"),
-        "/etc/profile.d/nix.sh",
-        "/nix/var/nix/profiles/default/etc/profile.d/nix.sh",
-        "/root/.nix-profile/etc/profile.d/nix.sh",
+        Path.home() / ".nix-profile" / "etc" / "profile.d" / "nix.sh",
+        Path("/etc/profile.d/nix.sh"),
+        Path("/nix/var/nix/profiles/default/etc/profile.d/nix.sh"),
+        Path("/root/.nix-profile/etc/profile.d/nix.sh"),
     ]
 
     nix_profile_path = None
     for profile in possible_nix_profiles:
-        if os.path.exists(profile):
+        if profile.exists():
             nix_profile_path = profile
             console.print(f"[green]Found Nix profile at {profile}[/green]")
             break
 
     if nix_profile_path:
         console.print(f"[yellow]Sourcing {nix_profile_path}...[/yellow]")
-        source_env = f"source {nix_profile_path} && env"
+        source_env = f"source {str(nix_profile_path)} && env"
         try:
             proc = subprocess.Popen(
                 source_env,
@@ -293,13 +296,12 @@ def source_nix_profile():
     else:
         console.print("[yellow]Could not find Nix profile to source.[/yellow]")
         for nix_bin in [
-            "~/.nix-profile/bin",
-            "/nix/var/nix/profiles/default/bin",
+            Path.home() / ".nix-profile" / "bin",
+            Path("/nix/var/nix/profiles/default/bin"),
         ]:
-            expanded_path = os.path.expanduser(nix_bin)
-            if os.path.exists(expanded_path):
-                os.environ["PATH"] = f"{expanded_path}:{os.environ['PATH']}"
-                console.print(f"[green]Added {expanded_path} to PATH[/green]")
+            if nix_bin.exists():
+                os.environ["PATH"] = f"{str(nix_bin)}:{os.environ['PATH']}"
+                console.print(f"[green]Added {nix_bin} to PATH[/green]")
 
         return False
 
@@ -310,19 +312,18 @@ def force_reload_nix_env():
     console.print("[yellow]Performing aggressive Nix environment reload...[/yellow]")
 
     nix_bin_paths = [
-        "~/.nix-profile/bin",
-        "/nix/var/nix/profiles/default/bin",
-        "/run/current-system/sw/bin",
+        Path.home() / ".nix-profile" / "bin",
+        Path("/nix/var/nix/profiles/default/bin"),
+        Path("/run/current-system/sw/bin"),
     ]
 
     for path in nix_bin_paths:
-        expanded_path = os.path.expanduser(path)
-        if os.path.exists(expanded_path):
-            os.environ["PATH"] = f"{expanded_path}:{os.environ['PATH']}"
-            console.print(f"[dim]Added {expanded_path} to PATH[/dim]")
+        if path.exists():
+            os.environ["PATH"] = f"{str(path)}:{os.environ['PATH']}"
+            console.print(f"[dim]Added {path} to PATH[/dim]")
 
     os.environ["NIX_PATH"] = (
-        f"nixpkgs={os.path.expanduser('~/.nix-defexpr/channels/nixpkgs')}"
+        f"nixpkgs={str(Path.home() / '.nix-defexpr' / 'channels' / 'nixpkgs')}"
     )
     os.environ["NIX_SSL_CERT_FILE"] = "/etc/ssl/certs/ca-certificates.crt"
 
@@ -362,30 +363,30 @@ def verify_nix_installation():
 def configure_nix_experimental_features():
     """Configure experimental features in nix.conf."""
     try:
-        nix_conf_dir = os.path.expanduser("~/.config/nix")
-        nix_conf_file = os.path.join(nix_conf_dir, "nix.conf")
+        nix_conf_dir = Path.home() / ".config" / "nix"
+        nix_conf_file = nix_conf_dir / "nix.conf"
 
-        if not os.path.exists(nix_conf_dir):
+        if not nix_conf_dir.exists():
             try:
-                os.makedirs(nix_conf_dir, exist_ok=True)
+                nix_conf_dir.mkdir(parents=True, exist_ok=True)
             except Exception:
-                nix_conf_dir = "/etc/nix"
-                nix_conf_file = os.path.join(nix_conf_dir, "nix.conf")
+                nix_conf_dir = Path("/etc/nix")
+                nix_conf_file = nix_conf_dir / "nix.conf"
 
-        if not os.path.exists(nix_conf_dir):
+        if not nix_conf_dir.exists():
             try:
-                os.makedirs(nix_conf_dir, exist_ok=True)
+                nix_conf_dir.mkdir(parents=True, exist_ok=True)
             except Exception as e:
                 console.print(f"[yellow]Could not create {nix_conf_dir}: {e}[/yellow]")
-                nix_conf_dir = os.path.expanduser("~/.dotfiles/nix")
-                os.makedirs(nix_conf_dir, exist_ok=True)
-                nix_conf_file = os.path.join(nix_conf_dir, "nix.conf")
+                nix_conf_dir = Path.home() / ".dotfiles" / "nix"
+                nix_conf_dir.mkdir(parents=True, exist_ok=True)
+                nix_conf_file = nix_conf_dir / "nix.conf"
                 console.print(
                     f"[yellow]Using fallback configuration at {nix_conf_file}[/yellow]"
                 )
 
         line_exists = False
-        if os.path.exists(nix_conf_file):
+        if nix_conf_file.exists():
             try:
                 with open(nix_conf_file, "r") as f:
                     for line in f:
@@ -409,9 +410,9 @@ def configure_nix_experimental_features():
                 console.print(
                     "[yellow]Set NIX_CONFIG environment variable as fallback.[/yellow]"
                 )
-                shell_rc_file = os.path.expanduser("~/.bashrc")
-                if os.path.exists(os.path.expanduser("~/.zshrc")):
-                    shell_rc_file = os.path.expanduser("~/.zshrc")
+                shell_rc_file = Path.home() / ".bashrc"
+                if (Path.home() / ".zshrc").exists():
+                    shell_rc_file = Path.home() / ".zshrc"
 
                 try:
                     with open(shell_rc_file, "a") as f:
@@ -450,7 +451,9 @@ def install_home_manager_standalone(ctx: InstallContext):
 
     try:
         ctx.console.print("[yellow]Trying nix-env direct installation...[/yellow]")
-        run_command(["nix-env", "-iA", "nixpkgs.home-manager"], check=True, console=ctx.console)
+        run_command(
+            ["nix-env", "-iA", "nixpkgs.home-manager"], check=True, console=ctx.console
+        )
         ctx.console.print(
             "[green]Home Manager installed successfully using nix-env![/green]"
         )
@@ -470,10 +473,10 @@ def install_home_manager_standalone(ctx: InstallContext):
 
         try:
             shell_rc = None
-            if os.path.exists(os.path.expanduser("~/.zshrc")):
-                shell_rc = os.path.expanduser("~/.zshrc")
-            elif os.path.exists(os.path.expanduser("~/.bashrc")):
-                shell_rc = os.path.expanduser("~/.bashrc")
+            if (Path.home() / ".zshrc").exists():
+                shell_rc = Path.home() / ".zshrc"
+            elif (Path.home() / ".bashrc").exists():
+                shell_rc = Path.home() / ".bashrc"
 
             if shell_rc:
                 with open(shell_rc, "a") as f:
@@ -485,7 +488,9 @@ def install_home_manager_standalone(ctx: InstallContext):
                     )
                 ctx.console.print(f"[green]Added NIX_PATH to {shell_rc}[/green]")
         except Exception as e:
-            ctx.console.print(f"[yellow]Could not update shell configuration: {e}[/yellow]")
+            ctx.console.print(
+                f"[yellow]Could not update shell configuration: {e}[/yellow]"
+            )
 
         return True
     except Exception as e:
@@ -493,30 +498,36 @@ def install_home_manager_standalone(ctx: InstallContext):
 
     try:
         ctx.console.print("[yellow]Trying direct installation from GitHub...[/yellow]")
-        tmp_dir = os.path.expanduser("~/.dotfiles/tmp")
-        os.makedirs(tmp_dir, exist_ok=True)
+        tmp_dir = Path.home() / ".dotfiles" / "tmp"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
 
-        repo_path = os.path.join(tmp_dir, "home-manager")
-        if os.path.exists(repo_path):
+        repo_path = tmp_dir / "home-manager"
+        if repo_path.exists():
             ctx.console.print(
                 "[yellow]Removing existing home-manager directory...[/yellow]"
             )
             import shutil
 
-            shutil.rmtree(repo_path)
+            shutil.rmtree(str(repo_path))
 
         run_command(
             [
                 "git",
                 "clone",
                 "https://github.com/nix-community/home-manager.git",
-                repo_path,
+                str(repo_path),
             ],
             check=True,
         )
 
-        run_command(["nix-shell", "-A", "install", repo_path], check=True, console=ctx.console)
-        ctx.console.print("[green]Home Manager installed successfully from GitHub![/green]")
+        run_command(
+            ["nix-shell", "-A", "install", str(repo_path)],
+            check=True,
+            console=ctx.console,
+        )
+        ctx.console.print(
+            "[green]Home Manager installed successfully from GitHub![/green]"
+        )
         return True
     except Exception as e:
         ctx.console.print(f"[yellow]Direct GitHub installation failed: {e}[/yellow]")
@@ -527,7 +538,9 @@ def install_home_manager_standalone(ctx: InstallContext):
 def install_home_manager(ctx: InstallContext):
     """Installs Home Manager."""
     if ctx.dry_run:
-        ctx.console.print("[bold yellow][DRY RUN][/bold yellow] Would install Home Manager")
+        ctx.console.print(
+            "[bold yellow][DRY RUN][/bold yellow] Would install Home Manager"
+        )
         return
 
     ctx.console.print("[bold]Installing Home Manager...[/bold]")
@@ -541,8 +554,9 @@ def install_home_manager(ctx: InstallContext):
     try:
         nix_channel_path = None
         for path in os.environ.get("PATH", "").split(":"):
-            if os.path.exists(os.path.join(path, "nix-channel")):
-                nix_channel_path = os.path.join(path, "nix-channel")
+            nix_channel = Path(path) / "nix-channel"
+            if nix_channel.exists():
+                nix_channel_path = str(nix_channel)
                 break
 
         try:
@@ -558,7 +572,7 @@ def install_home_manager(ctx: InstallContext):
                 )
 
                 env = os.environ.copy()
-                env["NIX_USER_CHANNEL_ROOT"] = os.path.expanduser("~/.nix-channels")
+                env["NIX_USER_CHANNEL_ROOT"] = str(Path.home() / ".nix-channels")
 
                 ctx.console.print("[yellow]Adding nixpkgs channel...[/yellow]")
                 result = subprocess.run(
@@ -699,8 +713,9 @@ def install_home_manager(ctx: InstallContext):
 
         nix_shell_cmd = "nix-shell"
         for path in os.environ.get("PATH", "").split(":"):
-            if os.path.exists(os.path.join(path, "nix-shell")):
-                nix_shell_cmd = os.path.join(path, "nix-shell")
+            nix_shell = Path(path) / "nix-shell"
+            if nix_shell.exists():
+                nix_shell_cmd = str(nix_shell)
                 break
 
         try:
@@ -767,11 +782,14 @@ def clone_dotfiles(ctx: InstallContext):
         )
         return
 
-    if not os.path.exists(ctx.dotfiles_dir):
+    if not ctx.dotfiles_dir.exists():
         ctx.console.print("[bold]Cloning dotfiles repository...[/bold]")
-        os.makedirs(os.path.dirname(ctx.dotfiles_dir), exist_ok=True)
+        ctx.dotfiles_dir.parent.mkdir(parents=True, exist_ok=True)
         try:
-            run_command(["git", "clone", "--depth", "1", ctx.repo_url, ctx.dotfiles_dir], console=ctx.console)
+            run_command(
+                ["git", "clone", "--depth", "1", ctx.repo_url, str(ctx.dotfiles_dir)],
+                console=ctx.console,
+            )
         except Exception as e:
             ctx.console.print(f"[bold red]Error cloning dotfiles: {e}[/bold red]")
             sys.exit(1)
@@ -819,7 +837,9 @@ def collect_user_info(ctx: InstallContext):
     ctx.console.print("")
 
     ctx.user_config["username"] = Prompt.ask("Username", default=CURRENT_USER)
-    ctx.user_config["git_name"] = Prompt.ask("Your full name (for Git config)", default="")
+    ctx.user_config["git_name"] = Prompt.ask(
+        "Your full name (for Git config)", default=""
+    )
     ctx.user_config["git_email"] = Prompt.ask("Your email (for Git config)", default="")
 
     ctx.user_config["onepassword_disable"] = Confirm.ask(
@@ -895,7 +915,9 @@ def gpg_key_options(ctx: InstallContext):
 
     if Confirm.ask("Would you like to create a new GPG key?", default=True):
         ctx.console.print("[bold]Creating new GPG key...[/bold]")
-        key_id = create_gpg_key(ctx, ctx.user_config["git_name"], ctx.user_config["git_email"])
+        key_id = create_gpg_key(
+            ctx, ctx.user_config["git_name"], ctx.user_config["git_email"]
+        )
 
         if key_id:
             ctx.user_config["git_signing_key"] = key_id
@@ -907,7 +929,9 @@ def gpg_key_options(ctx: InstallContext):
             ):
                 add_key_to_github(ctx, "gpg", key_id)
         else:
-            ctx.console.print("[yellow]GPG key creation failed or was cancelled.[/yellow]")
+            ctx.console.print(
+                "[yellow]GPG key creation failed or was cancelled.[/yellow]"
+            )
             ctx.user_config["git_signing_key"] = Prompt.ask(
                 "Enter your GPG key ID manually", default=""
             )
@@ -949,7 +973,9 @@ def ssh_key_options(ctx: InstallContext):
                 "Would you like to add this key to your GitHub account for signing?",
                 default=False,
             ):
-                add_key_to_github(ctx, "ssh-signing", ctx.user_config["git_signing_key"])
+                add_key_to_github(
+                    ctx, "ssh-signing", ctx.user_config["git_signing_key"]
+                )
 
             return
 
@@ -967,7 +993,9 @@ def ssh_key_options(ctx: InstallContext):
             ):
                 add_key_to_github(ctx, "ssh-signing", key_path)
         else:
-            ctx.console.print("[yellow]SSH key creation failed or was cancelled.[/yellow]")
+            ctx.console.print(
+                "[yellow]SSH key creation failed or was cancelled.[/yellow]"
+            )
             ctx.user_config["git_signing_key"] = Prompt.ask(
                 "Enter your SSH key path manually", default="~/.ssh/id_ed25519"
             )
@@ -1021,8 +1049,8 @@ def list_gpg_keys(ctx: InstallContext):
 def create_gpg_key(ctx: InstallContext, name, email):
     """Create a new GPG key."""
     try:
-        batch_file = os.path.expanduser("~/.gnupg/batch")
-        os.makedirs(os.path.dirname(batch_file), exist_ok=True)
+        batch_file = Path.home() / ".gnupg" / "batch"
+        batch_file.parent.mkdir(parents=True, exist_ok=True)
 
         with open(batch_file, "w") as f:
             f.write(
@@ -1037,16 +1065,18 @@ def create_gpg_key(ctx: InstallContext, name, email):
                 )
             )
 
-        ctx.console.print("[yellow]Generating GPG key... this may take a moment.[/yellow]")
+        ctx.console.print(
+            "[yellow]Generating GPG key... this may take a moment.[/yellow]"
+        )
         result = subprocess.run(
-            ["gpg", "--batch", "--generate-key", batch_file],
+            ["gpg", "--batch", "--generate-key", str(batch_file)],
             capture_output=True,
             text=True,
             check=False,
         )
 
         try:
-            os.remove(batch_file)
+            batch_file.unlink(missing_ok=True)
         except Exception:
             pass
 
@@ -1076,16 +1106,16 @@ def create_gpg_key(ctx: InstallContext, name, email):
 
 def list_ssh_keys(ctx: InstallContext):
     """List existing SSH keys."""
-    ssh_dir = os.path.expanduser("~/.ssh")
-    if not os.path.exists(ssh_dir):
+    ssh_dir = Path.home() / ".ssh"
+    if not ssh_dir.exists():
         return []
 
     keys = []
-    for file in os.listdir(ssh_dir):
-        if file.endswith(".pub") and not file.startswith("known_hosts"):
-            private_key = os.path.join(ssh_dir, file[:-4])
-            if os.path.exists(private_key):
-                keys.append(private_key)
+    for file in ssh_dir.iterdir():
+        if file.suffix == ".pub" and not file.name.startswith("known_hosts"):
+            private_key = file.with_suffix("")
+            if private_key.exists():
+                keys.append(str(private_key))
 
     return keys
 
@@ -1093,9 +1123,9 @@ def list_ssh_keys(ctx: InstallContext):
 def create_ssh_key(ctx: InstallContext, email):
     """Create a new SSH key."""
     try:
-        key_path = os.path.expanduser("~/.ssh/id_signing_ed25519")
+        key_path = Path.home() / ".ssh" / "id_signing_ed25519"
 
-        os.makedirs(os.path.dirname(key_path), exist_ok=True)
+        key_path.parent.mkdir(parents=True, exist_ok=True)
 
         ctx.console.print("[yellow]Generating SSH key...[/yellow]")
         result = subprocess.run(
@@ -1106,7 +1136,7 @@ def create_ssh_key(ctx: InstallContext, email):
                 "-C",
                 email,
                 "-f",
-                key_path,
+                str(key_path),
                 "-N",
                 "",
             ],
@@ -1119,13 +1149,15 @@ def create_ssh_key(ctx: InstallContext, email):
             ctx.console.print(f"[red]SSH key generation failed:[/red]\n{result.stderr}")
             return None
 
-        return key_path
+        return str(key_path)
     except Exception as e:
         ctx.console.print(f"[red]Error creating SSH key: {e}[/red]")
         return None
 
 
-def add_key_to_github(ctx: InstallContext, key_type: Literal["gpg", "ssh", "ssh-signing"], key_path_or_id):
+def add_key_to_github(
+    ctx: InstallContext, key_type: Literal["gpg", "ssh", "ssh-signing"], key_path_or_id
+):
     """Add a key to GitHub."""
     try:
         if command_exists("gh"):
@@ -1143,20 +1175,20 @@ def add_key_to_github(ctx: InstallContext, key_type: Literal["gpg", "ssh", "ssh-
 
                 gpg_key = export_result.stdout
 
-                tmp_file = os.path.expanduser("~/gpg_key.asc")
+                tmp_file = Path.home() / "gpg_key.asc"
                 with open(tmp_file, "w") as f:
                     f.write(gpg_key)
 
                 ctx.console.print("[yellow]Adding GPG key to GitHub...[/yellow]")
                 gh_result = subprocess.run(
-                    ["gh", "gpg-key", "add", tmp_file],
+                    ["gh", "gpg-key", "add", str(tmp_file)],
                     capture_output=True,
                     text=True,
                     check=False,
                 )
 
                 try:
-                    os.remove(tmp_file)
+                    tmp_file.unlink(missing_ok=True)
                 except Exception:
                     pass
 
@@ -1167,12 +1199,14 @@ def add_key_to_github(ctx: InstallContext, key_type: Literal["gpg", "ssh", "ssh-
                     )
                     return False
 
-                ctx.console.print("[green]GPG key added to GitHub successfully![/green]")
+                ctx.console.print(
+                    "[green]GPG key added to GitHub successfully![/green]"
+                )
                 return True
 
             elif key_type in ("ssh", "ssh-signing"):
-                pub_key_path = f"{key_path_or_id}.pub"
-                if not os.path.exists(pub_key_path):
+                pub_key_path = Path(f"{key_path_or_id}.pub")
+                if not pub_key_path.exists():
                     ctx.console.print(
                         f"[red]SSH public key not found: {pub_key_path}[/red]"
                     )
@@ -1243,7 +1277,7 @@ def add_key_to_github(ctx: InstallContext, key_type: Literal["gpg", "ssh", "ssh-
                             "permissions.[/green]"
                         )
 
-                cmd = ["gh", "ssh-key", "add", pub_key_path, "--title", title]
+                cmd = ["gh", "ssh-key", "add", str(pub_key_path), "--title", title]
                 if key_type == "ssh-signing":
                     cmd += ["--type", "signing"]
 
@@ -1258,7 +1292,9 @@ def add_key_to_github(ctx: InstallContext, key_type: Literal["gpg", "ssh", "ssh-
                     )
                     return False
 
-                ctx.console.print("[green]SSH key added to GitHub successfully![/green]")
+                ctx.console.print(
+                    "[green]SSH key added to GitHub successfully![/green]"
+                )
                 return True
         else:
             ctx.console.print(
@@ -1383,8 +1419,8 @@ def add_key_to_github(ctx: InstallContext, key_type: Literal["gpg", "ssh", "ssh-
                         )
 
                     elif key_type in ("ssh", "ssh-signing"):
-                        pub_key_path = f"{key_path_or_id}.pub"
-                        if not os.path.exists(pub_key_path):
+                        pub_key_path = Path(f"{key_path_or_id}.pub")
+                        if not pub_key_path.exists():
                             ctx.console.print(
                                 f"[red]SSH public key not found: {pub_key_path}[/red]"
                             )
@@ -1434,7 +1470,9 @@ def add_key_to_github(ctx: InstallContext, key_type: Literal["gpg", "ssh", "ssh-
                     return True
 
                 except ImportError as e:
-                    ctx.console.print(f"[red]Failed to import necessary modules: {e}[/red]")
+                    ctx.console.print(
+                        f"[red]Failed to import necessary modules: {e}[/red]"
+                    )
                 except requests.RequestException as e:
                     ctx.console.print(f"[red]Network error: {e}[/red]")
                 except GithubException as e:
@@ -1456,7 +1494,9 @@ def replace_username_in_files(ctx: InstallContext):
     """Replace instances of the default username with the current user's
     username."""
     action_text = (
-        "[bold yellow][DRY RUN][/bold yellow] Would replace" if ctx.dry_run else "Replacing"
+        "[bold yellow][DRY RUN][/bold yellow] Would replace"
+        if ctx.dry_run
+        else "Replacing"
     )
     ctx.console.print(
         f"[bold]{action_text} '{DEFAULT_USER}' with '{ctx.user_config['username']}' in dotfiles...[/bold]"
@@ -1476,14 +1516,14 @@ def replace_username_in_files(ctx: InstallContext):
         ".woff2",
     ]
 
-    for root, dirs, files in os.walk(ctx.dotfiles_dir):
+    for root, dirs, files in os.walk(str(ctx.dotfiles_dir)):
         dirs[:] = [d for d in dirs if d not in excluded_dirs]
 
         for file in files:
             if any(file.endswith(ext) for ext in excluded_exts):
                 continue
 
-            file_path = os.path.join(root, file)
+            file_path = Path(root) / file
 
             try:
                 if is_binary(file_path):
@@ -1526,8 +1566,8 @@ def update_git_config(ctx: InstallContext):
     )
     ctx.console.print(f"[bold]{updating_text} Git configuration...[/bold]")
 
-    git_config_path = os.path.join(ctx.dotfiles_dir, "home", "git", "default.nix")
-    if not os.path.exists(git_config_path):
+    git_config_path = ctx.dotfiles_dir / "home" / "git" / "default.nix"
+    if not git_config_path.exists():
         ctx.console.print(
             "[yellow]Git config file not found, skipping Git configuration.[/yellow]"
         )
@@ -1546,9 +1586,13 @@ def update_git_config(ctx: InstallContext):
                 content,
             )
             set_text = (
-                "[bold yellow][DRY RUN][/bold yellow] Would set" if ctx.dry_run else "Set"
+                "[bold yellow][DRY RUN][/bold yellow] Would set"
+                if ctx.dry_run
+                else "Set"
             )
-            ctx.console.print(f"  {set_text} Git user name to: {ctx.user_config['git_name']}")
+            ctx.console.print(
+                f"  {set_text} Git user name to: {ctx.user_config['git_name']}"
+            )
 
         if ctx.user_config["git_email"]:
             content = re.sub(
@@ -1563,9 +1607,13 @@ def update_git_config(ctx: InstallContext):
                 content,
             )
             set_text = (
-                "[bold yellow][DRY RUN][/bold yellow] Would set" if ctx.dry_run else "Set"
+                "[bold yellow][DRY RUN][/bold yellow] Would set"
+                if ctx.dry_run
+                else "Set"
             )
-            ctx.console.print(f"  {set_text} Git email to: {ctx.user_config['git_email']}")
+            ctx.console.print(
+                f"  {set_text} Git email to: {ctx.user_config['git_email']}"
+            )
 
         if ctx.user_config["use_signing_key"]:
             signing_method = ctx.user_config["signing_method"]
@@ -1688,11 +1736,11 @@ def update_git_config(ctx: InstallContext):
                 ctx.user_config["use_signing_key"]
                 and ctx.user_config["signing_method"] == "ssh"
             ):
-                allowed_signers_path = os.path.expanduser("~/.ssh/allowed_signers")
-                os.makedirs(os.path.dirname(allowed_signers_path), exist_ok=True)
+                allowed_signers_path = Path.home() / ".ssh" / "allowed_signers"
+                allowed_signers_path.parent.mkdir(parents=True, exist_ok=True)
 
-                pub_key_path = f"{ctx.user_config['git_signing_key']}.pub"
-                if os.path.exists(pub_key_path):
+                pub_key_path = Path(f"{ctx.user_config['git_signing_key']}.pub")
+                if pub_key_path.exists():
                     with open(pub_key_path, "r") as f:
                         pub_key = f.read().strip()
 
@@ -1762,7 +1810,9 @@ def apply_home_manager(ctx: InstallContext):
     elif system == "Linux":
         flake_output = "#hadronomy-linux"
     else:
-        ctx.console.print(f"[bold red]Unsupported operating system: {system}[/bold red]")
+        ctx.console.print(
+            f"[bold red]Unsupported operating system: {system}[/bold red]"
+        )
         sys.exit(1)
 
     ctx.console.print(
@@ -1775,7 +1825,7 @@ def apply_home_manager(ctx: InstallContext):
                 "home-manager",
                 "switch",
                 "--flake",
-                f"{ctx.dotfiles_dir}{flake_output}",
+                f"{str(ctx.dotfiles_dir)}{flake_output}",
                 "-b",
                 "backup",
                 "--impure",
@@ -1831,7 +1881,7 @@ def is_run_from_install_sh():
 
 def cleanup(exit_code=0):
     """Clean up by deleting the script and exiting with the specified code."""
-    script_path = os.path.abspath(__file__)
+    script_path = Path(__file__).resolve()
 
     try:
         is_from_installer = is_run_from_install_sh()
@@ -1843,7 +1893,7 @@ def cleanup(exit_code=0):
             f"[bold red]Installation failed! Removing script: {script_path}[/bold red]"
         )
         try:
-            os.remove(script_path)
+            script_path.unlink(missing_ok=True)
             console.print("[yellow]Script removed successfully.[/yellow]")
         except Exception as e:
             console.print(f"[bold red]Failed to remove script: {e}[/bold red]")
@@ -1882,7 +1932,7 @@ def install(
     ctx = InstallContext(
         dry_run=dry_run,
         console=Console(),
-        dotfiles_dir=os.path.expanduser(dotfiles_dir),
+        dotfiles_dir=Path(dotfiles_dir).expanduser(),
         repo_url=repo_url,
     )
 

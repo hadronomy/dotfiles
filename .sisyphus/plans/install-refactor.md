@@ -47,7 +47,7 @@ The `install.py` script is the entry point for bootstrapping the dotfiles. It cu
   - **Verification**: Run `install.py --dry-run` to ensure logic flows correctly.
 
 ### Phase 3: Pathlib Migration
-- [ ] 4. Migrate to `pathlib.Path`
+- [x] 4. Migrate to `pathlib.Path`
   **What to do**:
   - Replace `os.path.join`, `os.path.expanduser`, `os.path.exists` with `Path` methods.
   - Update `InstallContext` to store paths as `Path` objects.
