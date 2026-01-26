@@ -40,7 +40,7 @@ The `install.py` script is the entry point for bootstrapping the dotfiles. It cu
   - `install.py:34-46` (Global variables)
   - `install.py:1966` (Main command)
 
-- [ ] 3. Refactor function signatures
+- [x] 3. Refactor function signatures
   **What to do**:
   - Update `install_nix`, `install_home_manager`, `clone_dotfiles`, etc., to take `ctx`.
   - Update all callsites to pass the context object.
