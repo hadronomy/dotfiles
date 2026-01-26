@@ -44,10 +44,11 @@
       system = "aarch64-darwin";
       systems = [
         "aarch64-darwin"
+        "x86_64-linux"
       ];
 
-      pkgs = import nixpkgs {
-        system = "aarch64-darwin";
+      mkPkgs = system: import nixpkgs {
+        inherit system;
         config = {
           allowUnfree = true;
           permittedInsecurePackages = [
@@ -56,7 +57,7 @@
         };
       };
 
-      flakePkgs = {
+      mkFlakePkgs = system: {
         bash-env-json = bash-env-json.packages.${system}.default;
         bash-env-nushell = bash-env-nushell.packages.${system}.default;
         mise = mise.packages.${system}.default;
@@ -111,17 +112,32 @@
 
       defaultPackage = forAllSystems (system: self.packages.${system}.apply);
 
-      homeConfigurations.hadronomy = home-manager.lib.homeManagerConfiguration {
-        inherit pkgs;
-        extraSpecialArgs = {
-          inherit flakePkgs;
-          disableCustomSSHAgent = false;
-        } // inputs;
+      homeConfigurations = {
+        hadronomy = home-manager.lib.homeManagerConfiguration {
+          pkgs = mkPkgs "aarch64-darwin";
+          extraSpecialArgs = {
+            flakePkgs = mkFlakePkgs "aarch64-darwin";
+            disableCustomSSHAgent = false;
+          } // inputs;
 
-        modules = [
-          ./home
-          catppuccin.homeModules.catppuccin
-        ] ++ builtins.attrValues self.homeManagerModules;
+          modules = [
+            ./home
+            catppuccin.homeModules.catppuccin
+          ] ++ builtins.attrValues self.homeManagerModules;
+        };
+
+        hadronomy-linux = home-manager.lib.homeManagerConfiguration {
+          pkgs = mkPkgs "x86_64-linux";
+          extraSpecialArgs = {
+            flakePkgs = mkFlakePkgs "x86_64-linux";
+            disableCustomSSHAgent = false;
+          } // inputs;
+
+          modules = [
+            ./home
+            catppuccin.homeModules.catppuccin
+          ] ++ builtins.attrValues self.homeManagerModules;
+        };
       };
 
       homeManagerModules = builtins.listToAttrs (
@@ -131,11 +147,14 @@
         }) (builtins.attrNames (builtins.readDir ./modules/hm))
       );
 
-      devShells = forAllSystems (system: {
-        inherit pkgs;
-        default = pkgs.mkShellNoCC {
-          buildInputs = with pkgs; [
-            self.packages.${system}.apply
+      devShells = forAllSystems (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          default = pkgs.mkShellNoCC {
+            buildInputs = with pkgs; [
+              self.packages.${system}.apply
             (writeScriptBin "dot-clean" ''
               nix-collect-garbage -d --delete-older-than 30d
             '')
@@ -149,8 +168,8 @@
             (writeScriptBin "dot-apply" ''
               ${self.packages.${system}.apply}/bin/apply-dotfiles
             '')
-          ];
-        };
-      });
+            ];
+          };
+        });
     };
 }
