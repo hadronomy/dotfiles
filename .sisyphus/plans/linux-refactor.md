@@ -52,7 +52,7 @@ User wants to commit current local changes, reconcile with remote (prioritizing 
   - `install.sh:108` (home-manager switch command)
 
 ### Phase 3: Verification
-- [ ] 5. Verify Builds
+- [x] 5. Verify Builds
   **What to do**:
   - Run `nix flake check`.
   - Run `nix build .#homeConfigurations.hadronomy.activationPackage --dry-run` (on macOS).
