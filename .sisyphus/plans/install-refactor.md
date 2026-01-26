@@ -72,7 +72,7 @@ The `install.py` script is the entry point for bootstrapping the dotfiles. It cu
   - Ensure prompts are clear and interactive.
 
 ## Success Criteria
-- [ ] Script compiles without syntax errors.
-- [ ] `install.py --dry-run` executes successfully.
-- [ ] Codebase uses `pathlib` and `InstallContext`.
-- [ ] Output is visually distinct and helpful (spinners, panels).
+- [x] Script compiles without syntax errors.
+- [x] `install.py --dry-run` executes successfully.
+- [x] Codebase uses `pathlib` and `InstallContext`.
+- [x] Output is visually distinct and helpful (spinners, panels).
