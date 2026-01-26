@@ -30,7 +30,7 @@ The `install.py` script is the entry point for bootstrapping the dotfiles. It cu
   - `install.py:1485` (Key title generation)
 
 ### Phase 2: Architecture & State Management
-- [ ] 2. Introduce `InstallContext` dataclass
+- [x] 2. Introduce `InstallContext` dataclass
   **What to do**:
   - Create a `@dataclass class InstallContext` to hold: `dry_run`, `console`, `dotfiles_dir`, `repo_url`, `user_config`.
   - Initialize this context in the `install` command.
