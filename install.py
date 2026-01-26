@@ -81,11 +81,7 @@ def run_command(command, check=True, shell=False, dry_run=False, env=None):
             if stderr_line:
                 console.print(f"[dim]{stderr_line.strip()}[/dim]")
 
-            if (
-                not stdout_line
-                and not stderr_line
-                and process.poll() is not None
-            ):
+            if not stdout_line and not stderr_line and process.poll() is not None:
                 break
 
         return_code = process.returncode
@@ -112,8 +108,7 @@ def install_nix(dry_run=False):
     """Installs Nix package manager."""
     if dry_run:
         console.print(
-            "[bold yellow][DRY RUN][/bold yellow] Would install Nix "
-            "package manager"
+            "[bold yellow][DRY RUN][/bold yellow] Would install Nix package manager"
         )
         return
 
@@ -140,8 +135,7 @@ def install_nix(dry_run=False):
                 )
             except Exception as curl_error:
                 console.print(
-                    f"[yellow]Curl failed: {curl_error}, trying "
-                    "wget...[/yellow]"
+                    f"[yellow]Curl failed: {curl_error}, trying wget...[/yellow]"
                 )
                 try:
                     run_command(
@@ -155,8 +149,7 @@ def install_nix(dry_run=False):
                     )
                 except Exception as wget_error:
                     console.print(
-                        f"[yellow]Wget failed: {wget_error}, using "
-                        "Python...[/yellow]"
+                        f"[yellow]Wget failed: {wget_error}, using Python...[/yellow]"
                     )
                     import urllib.request
 
@@ -196,8 +189,7 @@ def install_nix(dry_run=False):
 
             if verify_nix_installation():
                 console.print(
-                    "[green]Nix successfully installed and "
-                    "activated![/green]"
+                    "[green]Nix successfully installed and activated![/green]"
                 )
             else:
                 console.print(
@@ -205,17 +197,15 @@ def install_nix(dry_run=False):
                     "current process.[/yellow]"
                 )
                 console.print(
-                    "[yellow]Attempting to reload environment and "
-                    "continue...[/yellow]"
+                    "[yellow]Attempting to reload environment and continue...[/yellow]"
                 )
                 force_reload_nix_env()
 
         except Exception as e:
-            console.print(
-                "[bold red]Error installing Nix: "
-                f"{str(e).replace(chr(92), chr(92) * 2).replace('[', "
-                "'').replace(']', '')}[/bold red]"
+            error_msg = (
+                str(e).replace(chr(92), chr(92) * 2).replace("[", "").replace("]", "")
             )
+            console.print(f"[bold red]Error installing Nix: {error_msg}[/bold red]")
             cleanup(1)
 
     elif system == "Darwin":
@@ -233,8 +223,7 @@ def install_nix(dry_run=False):
         cleanup(1)
 
     console.print(
-        "[green]Nix installation complete. You may need to open a new "
-        "terminal.[/green]"
+        "[green]Nix installation complete. You may need to open a new terminal.[/green]"
     )
 
 
@@ -300,8 +289,7 @@ def source_nix_profile():
 def force_reload_nix_env():
     """Aggressively try to reload Nix environment when normal sourcing
     doesn't work."""
-    console.print("[yellow]Performing aggressive Nix environment reload..."
-                  "[/yellow]")
+    console.print("[yellow]Performing aggressive Nix environment reload...[/yellow]")
 
     nix_bin_paths = [
         "~/.nix-profile/bin",
@@ -321,8 +309,7 @@ def force_reload_nix_env():
     os.environ["NIX_SSL_CERT_FILE"] = "/etc/ssl/certs/ca-certificates.crt"
 
     try:
-        subprocess.run(["nix", "--version"], check=True, capture_output=True,
-                       text=True)
+        subprocess.run(["nix", "--version"], check=True, capture_output=True, text=True)
         console.print("[green]Nix command is now available![/green]")
         return True
     except Exception:
@@ -371,15 +358,12 @@ def configure_nix_experimental_features():
             try:
                 os.makedirs(nix_conf_dir, exist_ok=True)
             except Exception as e:
-                console.print(
-                    f"[yellow]Could not create {nix_conf_dir}: {e}[/yellow]"
-                )
+                console.print(f"[yellow]Could not create {nix_conf_dir}: {e}[/yellow]")
                 nix_conf_dir = os.path.expanduser("~/.dotfiles/nix")
                 os.makedirs(nix_conf_dir, exist_ok=True)
                 nix_conf_file = os.path.join(nix_conf_dir, "nix.conf")
                 console.print(
-                    "[yellow]Using fallback configuration at "
-                    f"{nix_conf_file}[/yellow]"
+                    f"[yellow]Using fallback configuration at {nix_conf_file}[/yellow]"
                 )
 
         line_exists = False
@@ -391,28 +375,21 @@ def configure_nix_experimental_features():
                             line_exists = True
                             break
             except Exception as e:
-                console.print(
-                    f"[yellow]Could not read {nix_conf_file}: {e}[/yellow]"
-                )
+                console.print(f"[yellow]Could not read {nix_conf_file}: {e}[/yellow]")
                 line_exists = False
 
         if not line_exists:
             try:
                 with open(nix_conf_file, "a") as f:
                     f.write("experimental-features = nix-command flakes\n")
-                console.print(
-                    "[green]Added experimental features to nix.conf.[/green]"
-                )
+                console.print("[green]Added experimental features to nix.conf.[/green]")
             except Exception as e:
                 console.print(
                     f"[yellow]Could not write to {nix_conf_file}: {e}[/yellow]"
                 )
-                os.environ["NIX_CONFIG"] = (
-                    "experimental-features = nix-command flakes"
-                )
+                os.environ["NIX_CONFIG"] = "experimental-features = nix-command flakes"
                 console.print(
-                    "[yellow]Set NIX_CONFIG environment variable as "
-                    "fallback.[/yellow]"
+                    "[yellow]Set NIX_CONFIG environment variable as fallback.[/yellow]"
                 )
                 shell_rc_file = os.path.expanduser("~/.bashrc")
                 if os.path.exists(os.path.expanduser("~/.zshrc")):
@@ -421,7 +398,7 @@ def configure_nix_experimental_features():
                 try:
                     with open(shell_rc_file, "a") as f:
                         f.write(
-                            '\n# Added by dotfiles installer\nexport '
+                            "\n# Added by dotfiles installer\nexport "
                             'NIX_CONFIG="experimental-features = '
                             'nix-command flakes"\n'
                         )
@@ -430,13 +407,11 @@ def configure_nix_experimental_features():
                     )
                 except Exception:
                     console.print(
-                        "[yellow]Could not add NIX_CONFIG to shell "
-                        "config.[/yellow]"
+                        "[yellow]Could not add NIX_CONFIG to shell config.[/yellow]"
                     )
         else:
             console.print(
-                "[yellow]Experimental features already present in "
-                "nix.conf.[/yellow]"
+                "[yellow]Experimental features already present in nix.conf.[/yellow]"
             )
     except Exception as e:
         console.print(
@@ -449,20 +424,17 @@ def install_home_manager_standalone(dry_run=False):
     issues."""
     if dry_run:
         console.print(
-            "[bold yellow][DRY RUN][/bold yellow] Would install Home "
-            "Manager directly"
+            "[bold yellow][DRY RUN][/bold yellow] Would install Home Manager directly"
         )
         return True
 
-    console.print("[bold]Installing Home Manager using standalone method..."
-                  "[/bold]")
+    console.print("[bold]Installing Home Manager using standalone method...[/bold]")
 
     try:
         console.print("[yellow]Trying nix-env direct installation...[/yellow]")
         run_command(["nix-env", "-iA", "nixpkgs.home-manager"], check=True)
         console.print(
-            "[green]Home Manager installed successfully using nix-env!"
-            "[/green]"
+            "[green]Home Manager installed successfully using nix-env![/green]"
         )
         return True
     except Exception as e:
@@ -475,8 +447,7 @@ def install_home_manager_standalone(dry_run=False):
             check=True,
         )
         console.print(
-            "[green]Home Manager installed successfully using flakes!"
-            "[/green]"
+            "[green]Home Manager installed successfully using flakes![/green]"
         )
 
         try:
@@ -492,29 +463,25 @@ def install_home_manager_standalone(dry_run=False):
                         "\n# Added by dotfiles installer\nexport "
                         "NIX_PATH=$HOME/.nix-defexpr/channels:/nix/var/"
                         "nix/profiles/per-user/root/channels"
-                        '${NIX_PATH:+:$NIX_PATH}\n'
+                        "${NIX_PATH:+:$NIX_PATH}\n"
                     )
                 console.print(f"[green]Added NIX_PATH to {shell_rc}[/green]")
         except Exception as e:
-            console.print(
-                f"[yellow]Could not update shell configuration: {e}[/yellow]"
-            )
+            console.print(f"[yellow]Could not update shell configuration: {e}[/yellow]")
 
         return True
     except Exception as e:
         console.print(f"[yellow]Flake-based installation failed: {e}[/yellow]")
 
     try:
-        console.print("[yellow]Trying direct installation from GitHub..."
-                      "[/yellow]")
+        console.print("[yellow]Trying direct installation from GitHub...[/yellow]")
         tmp_dir = os.path.expanduser("~/.dotfiles/tmp")
         os.makedirs(tmp_dir, exist_ok=True)
 
         repo_path = os.path.join(tmp_dir, "home-manager")
         if os.path.exists(repo_path):
             console.print(
-                "[yellow]Removing existing home-manager directory..."
-                "[/yellow]"
+                "[yellow]Removing existing home-manager directory...[/yellow]"
             )
             import shutil
 
@@ -531,10 +498,7 @@ def install_home_manager_standalone(dry_run=False):
         )
 
         run_command(["nix-shell", "-A", "install", repo_path], check=True)
-        console.print(
-            "[green]Home Manager installed successfully from GitHub!"
-            "[/green]"
-        )
+        console.print("[green]Home Manager installed successfully from GitHub![/green]")
         return True
     except Exception as e:
         console.print(f"[yellow]Direct GitHub installation failed: {e}[/yellow]")
@@ -545,18 +509,14 @@ def install_home_manager_standalone(dry_run=False):
 def install_home_manager(dry_run=False):
     """Installs Home Manager."""
     if dry_run:
-        console.print(
-            "[bold yellow][DRY RUN][/bold yellow] Would install Home "
-            "Manager"
-        )
+        console.print("[bold yellow][DRY RUN][/bold yellow] Would install Home Manager")
         return
 
     console.print("[bold]Installing Home Manager...[/bold]")
 
     if install_home_manager_standalone(dry_run):
         console.print(
-            "[green]Home Manager installation completed successfully."
-            "[/green]"
+            "[green]Home Manager installation completed successfully.[/green]"
         )
         return
 
@@ -572,8 +532,7 @@ def install_home_manager(dry_run=False):
                 "/nix/var/nix/db/big-lock", os.W_OK
             ):
                 console.print(
-                    "[yellow]Detected permission issues with Nix lock "
-                    "files.[/yellow]"
+                    "[yellow]Detected permission issues with Nix lock files.[/yellow]"
                 )
                 console.print(
                     "[yellow]Trying single-user approach with separate "
@@ -581,9 +540,7 @@ def install_home_manager(dry_run=False):
                 )
 
                 env = os.environ.copy()
-                env["NIX_USER_CHANNEL_ROOT"] = os.path.expanduser(
-                    "~/.nix-channels"
-                )
+                env["NIX_USER_CHANNEL_ROOT"] = os.path.expanduser("~/.nix-channels")
 
                 console.print("[yellow]Adding nixpkgs channel...[/yellow]")
                 result = subprocess.run(
@@ -600,14 +557,11 @@ def install_home_manager(dry_run=False):
                 )
                 if result.returncode != 0:
                     console.print(
-                        "[red]Failed to add nixpkgs channel: "
-                        f"{result.stderr}[/red]"
+                        f"[red]Failed to add nixpkgs channel: {result.stderr}[/red]"
                     )
                     raise Exception("Failed to add nixpkgs channel")
 
-                console.print(
-                    "[yellow]Adding home-manager channel...[/yellow]"
-                )
+                console.print("[yellow]Adding home-manager channel...[/yellow]")
                 result = subprocess.run(
                     [
                         nix_channel_path,
@@ -655,8 +609,7 @@ def install_home_manager(dry_run=False):
                 )
                 if result.returncode != 0:
                     console.print(
-                        "[red]Failed to add nixpkgs channel: "
-                        f"{result.stderr}[/red]"
+                        f"[red]Failed to add nixpkgs channel: {result.stderr}[/red]"
                     )
 
                 result = subprocess.run(
@@ -690,8 +643,7 @@ def install_home_manager(dry_run=False):
 
                     if "Permission denied" in result.stderr:
                         console.print(
-                            "[yellow]Permission denied, trying with "
-                            "sudo...[/yellow]"
+                            "[yellow]Permission denied, trying with sudo...[/yellow]"
                         )
                         try:
                             sudo_result = subprocess.run(
@@ -705,9 +657,7 @@ def install_home_manager(dry_run=False):
                                     "[red]Sudo update failed: "
                                     f"{sudo_result.stderr}[/red]"
                                 )
-                                raise Exception(
-                                    "Failed to update channels with sudo"
-                                )
+                                raise Exception("Failed to update channels with sudo")
                         except Exception:
                             console.print(
                                 "[yellow]Channel update failed, falling "
@@ -717,15 +667,13 @@ def install_home_manager(dry_run=False):
                             if install_home_manager_standalone(dry_run):
                                 return
                             raise Exception(
-                                "All home manager installation methods "
-                                "failed"
+                                "All home manager installation methods failed"
                             )
 
         except Exception as e:
             if "Permission denied" in str(e):
                 console.print(
-                    "[yellow]Permission denied when updating channels."
-                    "[/yellow]"
+                    "[yellow]Permission denied when updating channels.[/yellow]"
                 )
                 if install_home_manager_standalone(dry_run):
                     return
@@ -738,9 +686,7 @@ def install_home_manager(dry_run=False):
                 break
 
         try:
-            console.print(
-                "[yellow]Running home-manager installation...[/yellow]"
-            )
+            console.print("[yellow]Running home-manager installation...[/yellow]")
             result = subprocess.run(
                 [nix_shell_cmd, "<home-manager>", "-A", "install"],
                 check=False,
@@ -750,8 +696,7 @@ def install_home_manager(dry_run=False):
 
             if result.returncode != 0:
                 console.print(
-                    "[red]Home Manager installation failed: "
-                    f"{result.stderr}[/red]"
+                    f"[red]Home Manager installation failed: {result.stderr}[/red]"
                 )
                 raise Exception("Home Manager installation failed")
 
@@ -766,9 +711,7 @@ def install_home_manager(dry_run=False):
             raise Exception("All Home Manager installation methods failed")
 
     except Exception as e:
-        console.print(
-            f"[bold red]Error installing Home Manager: {e}[/bold red]"
-        )
+        console.print(f"[bold red]Error installing Home Manager: {e}[/bold red]")
         console.print(
             "[yellow]Please try installing Home Manager manually using one "
             "of these methods:[/yellow]"
@@ -786,8 +729,7 @@ def install_home_manager(dry_run=False):
 
         console.print("\n[bold]Method 3: Channels[/bold]")
         console.print(
-            "1. nix-channel --add https://nixos.org/channels/nixpkgs-unstable "
-            "nixpkgs"
+            "1. nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs"
         )
         console.print(
             "2. nix-channel --add https://github.com/nix-community/"
@@ -823,8 +765,7 @@ def customize_dotfiles(dry_run=False, force_customize=False):
     """Customize dotfiles for the current user if not the default user."""
     if CURRENT_USER == DEFAULT_USER and not force_customize:
         console.print(
-            "[green]Running as the default user, no customization needed."
-            "[/green]"
+            "[green]Running as the default user, no customization needed.[/green]"
         )
         return
 
@@ -835,8 +776,7 @@ def customize_dotfiles(dry_run=False, force_customize=False):
         )
     else:
         console.print(
-            "[bold yellow]Customization forced by command line flag."
-            "[/bold yellow]"
+            "[bold yellow]Customization forced by command line flag.[/bold yellow]"
         )
 
     if force_customize or Confirm.ask(
@@ -857,27 +797,18 @@ def customize_dotfiles(dry_run=False, force_customize=False):
 
 def collect_user_info():
     """Collect user information for customization."""
-    console.print("[bold]Collecting user information for customization..."
-                  "[/bold]")
+    console.print("[bold]Collecting user information for customization...[/bold]")
     console.print("")
 
-    USER_CONFIG["username"] = Prompt.ask(
-        "Username", default=CURRENT_USER
-    )
-    USER_CONFIG["git_name"] = Prompt.ask(
-        "Your full name (for Git config)", default=""
-    )
-    USER_CONFIG["git_email"] = Prompt.ask(
-        "Your email (for Git config)", default=""
-    )
+    USER_CONFIG["username"] = Prompt.ask("Username", default=CURRENT_USER)
+    USER_CONFIG["git_name"] = Prompt.ask("Your full name (for Git config)", default="")
+    USER_CONFIG["git_email"] = Prompt.ask("Your email (for Git config)", default="")
 
     USER_CONFIG["onepassword_disable"] = Confirm.ask(
         "Do you want to disable 1Password integration?", default=True
     )
 
-    use_signing_key = Confirm.ask(
-        "Would you like to use commit signing?", default=True
-    )
+    use_signing_key = Confirm.ask("Would you like to use commit signing?", default=True)
     USER_CONFIG["use_signing_key"] = use_signing_key
 
     if use_signing_key:
@@ -887,8 +818,7 @@ def collect_user_info():
                 "\n".join(
                     [
                         "[bold]Select a signing method:[/bold]",
-                        "1. GPG key (traditional, works across all "
-                        "Git clients)",
+                        "1. GPG key (traditional, works across all Git clients)",
                         "2. SSH key (simpler, uses your SSH credentials)",
                     ]
                 ),
@@ -934,8 +864,7 @@ def gpg_key_options():
             choice = int(choice_str)
             USER_CONFIG["git_signing_key"] = existing_gpg_keys[choice - 1][0]
             console.print(
-                "[green]Using GPG key: "
-                f"{USER_CONFIG['git_signing_key']}[/green]"
+                f"[green]Using GPG key: {USER_CONFIG['git_signing_key']}[/green]"
             )
 
             if Confirm.ask(
@@ -960,9 +889,7 @@ def gpg_key_options():
             ):
                 add_key_to_github("gpg", key_id)
         else:
-            console.print(
-                "[yellow]GPG key creation failed or was cancelled.[/yellow]"
-            )
+            console.print("[yellow]GPG key creation failed or was cancelled.[/yellow]")
             USER_CONFIG["git_signing_key"] = Prompt.ask(
                 "Enter your GPG key ID manually", default=""
             )
@@ -997,22 +924,18 @@ def ssh_key_options():
             choice = int(choice_str)
             USER_CONFIG["git_signing_key"] = existing_ssh_keys[choice - 1]
             console.print(
-                "[green]Using SSH key: "
-                f"{USER_CONFIG['git_signing_key']}[/green]"
+                f"[green]Using SSH key: {USER_CONFIG['git_signing_key']}[/green]"
             )
 
             if Confirm.ask(
-                "Would you like to add this key to your GitHub account for "
-                "signing?",
+                "Would you like to add this key to your GitHub account for signing?",
                 default=False,
             ):
                 add_key_to_github("ssh-signing", USER_CONFIG["git_signing_key"])
 
             return
 
-    if Confirm.ask(
-        "Would you like to create a new SSH key for signing?", default=True
-    ):
+    if Confirm.ask("Would you like to create a new SSH key for signing?", default=True):
         console.print("[bold]Creating new SSH key...[/bold]")
         key_path = create_ssh_key(USER_CONFIG["git_email"])
 
@@ -1026,9 +949,7 @@ def ssh_key_options():
             ):
                 add_key_to_github("ssh-signing", key_path)
         else:
-            console.print(
-                "[yellow]SSH key creation failed or was cancelled.[/yellow]"
-            )
+            console.print("[yellow]SSH key creation failed or was cancelled.[/yellow]")
             USER_CONFIG["git_signing_key"] = Prompt.ask(
                 "Enter your SSH key path manually", default="~/.ssh/id_ed25519"
             )
@@ -1098,10 +1019,7 @@ def create_gpg_key(name, email):
                 )
             )
 
-        console.print(
-            "[yellow]Generating GPG key... this may take a moment."
-            "[/yellow]"
-        )
+        console.print("[yellow]Generating GPG key... this may take a moment.[/yellow]")
         result = subprocess.run(
             ["gpg", "--batch", "--generate-key", batch_file],
             capture_output=True,
@@ -1115,9 +1033,7 @@ def create_gpg_key(name, email):
             pass
 
         if result.returncode != 0:
-            console.print(
-                f"[red]GPG key generation failed:[/red]\n{result.stderr}"
-            )
+            console.print(f"[red]GPG key generation failed:[/red]\n{result.stderr}")
             return None
 
         list_result = subprocess.run(
@@ -1182,9 +1098,7 @@ def create_ssh_key(email):
         )
 
         if result.returncode != 0:
-            console.print(
-                f"[red]SSH key generation failed:[/red]\n{result.stderr}"
-            )
+            console.print(f"[red]SSH key generation failed:[/red]\n{result.stderr}")
             return None
 
         return key_path
@@ -1193,8 +1107,7 @@ def create_ssh_key(email):
         return None
 
 
-def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
-                      key_path_or_id):
+def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"], key_path_or_id):
     """Add a key to GitHub."""
     try:
         if command_exists("gh"):
@@ -1236,17 +1149,14 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
                     )
                     return False
 
-                console.print(
-                    "[green]GPG key added to GitHub successfully![/green]"
-                )
+                console.print("[green]GPG key added to GitHub successfully![/green]")
                 return True
 
             elif key_type in ("ssh", "ssh-signing"):
                 pub_key_path = f"{key_path_or_id}.pub"
                 if not os.path.exists(pub_key_path):
                     console.print(
-                        f"[red]SSH public key not found: {pub_key_path}"
-                        "[/red]"
+                        f"[red]SSH public key not found: {pub_key_path}[/red]"
                     )
                     return False
 
@@ -1260,8 +1170,7 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
                 )
 
                 console.print(
-                    f"[yellow]Adding SSH key to GitHub as {key_type}..."
-                    "[/yellow]"
+                    f"[yellow]Adding SSH key to GitHub as {key_type}...[/yellow]"
                 )
 
                 if key_type == "ssh-signing":
@@ -1331,9 +1240,7 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
                     )
                     return False
 
-                console.print(
-                    "[green]SSH key added to GitHub successfully![/green]"
-                )
+                console.print("[green]SSH key added to GitHub successfully![/green]")
                 return True
         else:
             console.print(
@@ -1342,8 +1249,7 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
             )
 
             if Confirm.ask(
-                "Would you like to authenticate with GitHub to add your "
-                "key?",
+                "Would you like to authenticate with GitHub to add your key?",
                 default=True,
             ):
                 try:
@@ -1354,9 +1260,7 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
                     import requests
 
                     client_id = "Iv1.5da81c42435d41c5"
-                    scope = (
-                        "admin:public_key admin:gpg_key admin:ssh_signing_key"
-                    )
+                    scope = "admin:public_key admin:gpg_key admin:ssh_signing_key"
 
                     device_code_url = "https://github.com/login/device/code"
                     device_response = requests.post(
@@ -1367,8 +1271,7 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
 
                     if device_response.status_code != 200:
                         console.print(
-                            "[red]Failed to start GitHub authentication."
-                            "[/red]"
+                            "[red]Failed to start GitHub authentication.[/red]"
                         )
                         return False
 
@@ -1402,8 +1305,7 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
                     access_token = None
 
                     with console.status(
-                        "[bold green]Waiting for GitHub authorization..."
-                        "[/bold green]"
+                        "[bold green]Waiting for GitHub authorization...[/bold green]"
                     ):
                         while time.time() - start_time < expires_in:
                             token_response = requests.post(
@@ -1413,8 +1315,7 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
                                     "client_id": client_id,
                                     "device_code": device_code,
                                     "grant_type": (
-                                        "urn:ietf:params:oauth:grant-type:"
-                                        "device_code"
+                                        "urn:ietf:params:oauth:grant-type:device_code"
                                     ),
                                 },
                             )
@@ -1430,17 +1331,14 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
                                     interval += 5
                                 else:
                                     console.print(
-                                        f"[red]Error: "
-                                        f"{token_data['error']}[/red]"
+                                        f"[red]Error: {token_data['error']}[/red]"
                                     )
                                     return False
 
                             time.sleep(interval)
 
                     if not access_token:
-                        console.print(
-                            "[red]GitHub authorization timed out.[/red]"
-                        )
+                        console.print("[red]GitHub authorization timed out.[/red]")
                         return False
 
                     from github import Github, GithubException
@@ -1457,34 +1355,28 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
                         )
 
                         if export_result.returncode != 0:
-                            console.print(
-                                "[red]Failed to export GPG key.[/red]"
-                            )
+                            console.print("[red]Failed to export GPG key.[/red]")
                             return False
 
                         gpg_key = export_result.stdout
                         user.create_gpg_key(gpg_key)
                         console.print(
-                            "[green]GPG key added to GitHub successfully!"
-                            "[/green]"
+                            "[green]GPG key added to GitHub successfully![/green]"
                         )
 
                     elif key_type in ("ssh", "ssh-signing"):
                         pub_key_path = f"{key_path_or_id}.pub"
                         if not os.path.exists(pub_key_path):
                             console.print(
-                                f"[red]SSH public key not found: "
-                                f"{pub_key_path}[/red]"
+                                f"[red]SSH public key not found: {pub_key_path}[/red]"
                             )
                             return False
 
                         with open(pub_key_path, "r") as f:
                             ssh_key = f.read().strip()
 
-                        title = (
-                            f"{platform.node()}-{'signing-' if key_type == "
-                            "'ssh-signing' else ''}key"
-                        )
+                        key_suffix = "signing-" if key_type == "ssh-signing" else ""
+                        title = f"{platform.node()}-{key_suffix}key"
 
                         if key_type == "ssh-signing":
                             headers = {
@@ -1508,25 +1400,23 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
                                 )
                                 return True
                             else:
+                                error_message = response.json().get(
+                                    "message", "Unknown error"
+                                )
                                 console.print(
-                                    "[red]Failed to add SSH signing key: "
-                                    f"{response.json().get('message', "
-                                    "'Unknown error')}[/red]"
+                                    f"[red]Failed to add SSH signing key: {error_message}[/red]"
                                 )
                                 return False
                         else:
                             user.create_key(title=title, key=ssh_key)
                             console.print(
-                                "[green]SSH key added to GitHub "
-                                "successfully![/green]"
+                                "[green]SSH key added to GitHub successfully![/green]"
                             )
 
                     return True
 
                 except ImportError as e:
-                    console.print(
-                        f"[red]Failed to import necessary modules: {e}[/red]"
-                    )
+                    console.print(f"[red]Failed to import necessary modules: {e}[/red]")
                 except requests.RequestException as e:
                     console.print(f"[red]Network error: {e}[/red]")
                 except GithubException as e:
@@ -1547,12 +1437,11 @@ def add_key_to_github(key_type: Literal["gpg", "ssh", "ssh-signing"],
 def replace_username_in_files(dry_run=False):
     """Replace instances of the default username with the current user's
     username."""
+    action_text = (
+        "[bold yellow][DRY RUN][/bold yellow] Would replace" if dry_run else "Replacing"
+    )
     console.print(
-        "[bold]"
-        f"{'[bold yellow][DRY RUN][/bold yellow] Would replace' if dry_run "
-        "else 'Replacing'} "
-        f"'{DEFAULT_USER}' with '{USER_CONFIG['username']}' in dotfiles..."
-        "[/bold]"
+        f"[bold]{action_text} '{DEFAULT_USER}' with '{USER_CONFIG['username']}' in dotfiles...[/bold]"
     )
 
     excluded_dirs = [".git", "node_modules", ".cache", "target"]
@@ -1593,15 +1482,15 @@ def replace_username_in_files(dry_run=False):
                         with open(file_path, "w", encoding="utf-8") as f:
                             f.write(modified_content)
 
-                    console.print(
-                        "  "
-                        f"{'[bold yellow][DRY RUN][/bold yellow] Would "
-                        "update' if dry_run else 'Updated'}: {file_path}"
+                    update_text = (
+                        "[bold yellow][DRY RUN][/bold yellow] Would update"
+                        if dry_run
+                        else "Updated"
                     )
+                    console.print(f"  {update_text}: {file_path}")
             except Exception as e:
                 console.print(
-                    f"[yellow]Warning: Could not process {file_path}: "
-                    f"{e}[/yellow]"
+                    f"[yellow]Warning: Could not process {file_path}: {e}[/yellow]"
                 )
 
 
@@ -1614,17 +1503,15 @@ def update_git_config(dry_run=False):
     ):
         return
 
-    console.print(
-        "[bold]"
-        f"{'[bold yellow][DRY RUN][/bold yellow] Updating' if dry_run else "
-        "'Updating'} Git configuration...[/bold]"
+    updating_text = (
+        "[bold yellow][DRY RUN][/bold yellow] Updating" if dry_run else "Updating"
     )
+    console.print(f"[bold]{updating_text} Git configuration...[/bold]")
 
     git_config_path = os.path.join(DOTFILES_DIR, "home", "git", "default.nix")
     if not os.path.exists(git_config_path):
         console.print(
-            "[yellow]Git config file not found, skipping Git "
-            "configuration.[/yellow]"
+            "[yellow]Git config file not found, skipping Git configuration.[/yellow]"
         )
         return
 
@@ -1640,17 +1527,15 @@ def update_git_config(dry_run=False):
                 f'userName = "{USER_CONFIG["git_name"]}"',
                 content,
             )
-            console.print(
-                "  "
-                f"{'[bold yellow][DRY RUN][/bold yellow] Would set' if "
-                "dry_run else 'Set'} Git user name to: "
-                f"{USER_CONFIG['git_name']}"
+            set_text = (
+                "[bold yellow][DRY RUN][/bold yellow] Would set" if dry_run else "Set"
             )
+            console.print(f"  {set_text} Git user name to: {USER_CONFIG['git_name']}")
 
         if USER_CONFIG["git_email"]:
             content = re.sub(
                 r'userEmail\s*=\s*"[^"]*"',
-                f'userEmail = \"{USER_CONFIG['git_email']}\"',
+                f'userEmail = "{USER_CONFIG["git_email"]}"',
                 content,
             )
             # Escape double quotes inside f-string properly
@@ -1659,12 +1544,10 @@ def update_git_config(dry_run=False):
                 'userEmail = "{}"'.format(USER_CONFIG["git_email"]),
                 content,
             )
-            console.print(
-                "  "
-                f"{'[bold yellow][DRY RUN][/bold yellow] Would set' if "
-                "dry_run else 'Set'} Git email to: "
-                f"{USER_CONFIG['git_email']}"
+            set_text = (
+                "[bold yellow][DRY RUN][/bold yellow] Would set" if dry_run else "Set"
             )
+            console.print(f"  {set_text} Git email to: {USER_CONFIG['git_email']}")
 
         if USER_CONFIG["use_signing_key"]:
             signing_method = USER_CONFIG["signing_method"]
@@ -1697,12 +1580,12 @@ def update_git_config(dry_run=False):
                         content,
                     )
 
-                console.print(
-                    "  "
-                    f"{'[bold yellow][DRY RUN][/bold yellow] Would set' if "
-                    "dry_run else 'Set'} Git GPG signing key to: "
-                    f"{signing_key}"
+                set_text = (
+                    "[bold yellow][DRY RUN][/bold yellow] Would set"
+                    if dry_run
+                    else "Set"
                 )
+                console.print(f"  {set_text} Git GPG signing key to: {signing_key}")
 
             elif signing_method == "ssh":
                 if "gpg.format" in content:
@@ -1745,12 +1628,12 @@ def update_git_config(dry_run=False):
                             content,
                         )
 
-                console.print(
-                    "  "
-                    f"{'[bold yellow][DRY RUN][/bold yellow] Would set' if "
-                    "dry_run else 'Set'} Git SSH signing key to: "
-                    f"{signing_key}"
+                set_text = (
+                    "[bold yellow][DRY RUN][/bold yellow] Would set"
+                    if dry_run
+                    else "Set"
                 )
+                console.print(f"  {set_text} Git SSH signing key to: {signing_key}")
 
             if "commit.gpgSign" in content:
                 content = re.sub(
@@ -1772,12 +1655,12 @@ def update_git_config(dry_run=False):
                     'credential.helper = "store"',
                     content,
                 )
-                console.print(
-                    "  "
-                    f"{'[bold yellow][DRY RUN][/bold yellow] Would "
-                    "disable' if dry_run else 'Disabled'} 1Password "
-                    "integration"
+                disable_text = (
+                    "[bold yellow][DRY RUN][/bold yellow] Would disable"
+                    if dry_run
+                    else "Disabled"
                 )
+                console.print(f"  {disable_text} 1Password integration")
 
         if not dry_run and content != original_content:
             with open(git_config_path, "w") as f:
@@ -1787,9 +1670,7 @@ def update_git_config(dry_run=False):
                 USER_CONFIG["use_signing_key"]
                 and USER_CONFIG["signing_method"] == "ssh"
             ):
-                allowed_signers_path = os.path.expanduser(
-                    "~/.ssh/allowed_signers"
-                )
+                allowed_signers_path = os.path.expanduser("~/.ssh/allowed_signers")
                 os.makedirs(os.path.dirname(allowed_signers_path), exist_ok=True)
 
                 pub_key_path = f"{USER_CONFIG['git_signing_key']}.pub"
@@ -1805,13 +1686,11 @@ def update_git_config(dry_run=False):
                         f"{allowed_signers_path}[/green]"
                     )
 
-            console.print("[green]Git configuration updated successfully!"
-                          "[/green]")
+            console.print("[green]Git configuration updated successfully![/green]")
 
     except Exception as e:
         console.print(
-            f"[yellow]Warning: Could not update Git configuration: {e}"
-            "[/yellow]"
+            f"[yellow]Warning: Could not update Git configuration: {e}[/yellow]"
         )
 
 
@@ -1857,7 +1736,7 @@ def apply_home_manager(dry_run=False):
         return
 
     console.print("[bold]Applying Home Manager configuration...[/bold]")
-    
+
     # Detect OS and select appropriate flake output
     system = platform.system()
     if system == "Darwin":
@@ -1865,13 +1744,13 @@ def apply_home_manager(dry_run=False):
     elif system == "Linux":
         flake_output = "#hadronomy-linux"
     else:
-        console.print(
-            f"[bold red]Unsupported operating system: {system}[/bold red]"
-        )
+        console.print(f"[bold red]Unsupported operating system: {system}[/bold red]")
         sys.exit(1)
-    
-    console.print(f"[dim]Detected OS: {system}, using flake output: {flake_output}[/dim]")
-    
+
+    console.print(
+        f"[dim]Detected OS: {system}, using flake output: {flake_output}[/dim]"
+    )
+
     try:
         run_command(
             [
@@ -1886,8 +1765,7 @@ def apply_home_manager(dry_run=False):
         )
     except Exception as e:
         console.print(
-            f"[bold red]Error applying Home Manager configuration: {e}"
-            "[/bold red]"
+            f"[bold red]Error applying Home Manager configuration: {e}[/bold red]"
         )
         sys.exit(1)
     console.print("[green]Dotfiles applied successfully![/green]")
@@ -1895,8 +1773,7 @@ def apply_home_manager(dry_run=False):
 
 def handle_exit_signal(signum, frame):
     """Handle exit signals by cleaning up and deleting the script."""
-    console.print("\n[bold red]Received termination signal. Cleaning up..."
-                  "[/bold red]")
+    console.print("\n[bold red]Received termination signal. Cleaning up...[/bold red]")
     cleanup(1)
 
 
@@ -1945,8 +1822,7 @@ def cleanup(exit_code=0):
 
     if is_from_installer:
         console.print(
-            f"[bold red]Installation failed! Removing script: {script_path}"
-            "[/bold red]"
+            f"[bold red]Installation failed! Removing script: {script_path}[/bold red]"
         )
         try:
             os.remove(script_path)
@@ -1964,18 +1840,12 @@ def cleanup(exit_code=0):
 
 @app.command()
 def install(
-    repo_url: str = typer.Option(
-        REPO_URL, help="The URL of the dotfiles repository."
-    ),
+    repo_url: str = typer.Option(REPO_URL, help="The URL of the dotfiles repository."),
     dotfiles_dir: str = typer.Option(
         DOTFILES_DIR, help="The directory to clone the dotfiles into."
     ),
-    impure: bool = typer.Option(
-        True, help="Use the --impure flag for home-manager."
-    ),
-    skip_customization: bool = typer.Option(
-        False, help="Skip the customization step."
-    ),
+    impure: bool = typer.Option(True, help="Use the --impure flag for home-manager."),
+    skip_customization: bool = typer.Option(False, help="Skip the customization step."),
     customize: bool = typer.Option(
         False, help="Force customization regardless of username."
     ),
@@ -2028,14 +1898,11 @@ def install(
 
         if dry_run:
             console.print(
-                "[bold yellow]Dry run complete. No changes were made."
-                "[/bold yellow]"
+                "[bold yellow]Dry run complete. No changes were made.[/bold yellow]"
             )
 
     except Exception as e:
-        console.print(
-            f"[bold red]Installation failed with error: {e}[/bold red]"
-        )
+        console.print(f"[bold red]Installation failed with error: {e}[/bold red]")
         if not dry_run:
             cleanup(1)
 
