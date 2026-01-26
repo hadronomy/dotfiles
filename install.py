@@ -33,6 +33,8 @@ app = typer.Typer()
 
 DEFAULT_USER = "hadronomy"
 CURRENT_USER = getpass.getuser()
+# Define global console for functions called outside of command context
+console = Console()
 
 
 @dataclass
@@ -580,7 +582,7 @@ def install_home_manager(ctx: InstallContext):
     with ctx.console.status("[bold cyan]Installing Home Manager...[/bold cyan]"):
         ctx.console.print("[bold]Installing Home Manager...[/bold]")
 
-    if install_home_manager_standalone(ctx.dry_run):
+    if install_home_manager_standalone(ctx):
         ctx.console.print(
             "[green]Home Manager installation completed successfully.[/green]"
         )
@@ -731,7 +733,7 @@ def install_home_manager(ctx: InstallContext):
                                 "back to standalone installation..."
                                 "[/yellow]"
                             )
-                            if install_home_manager_standalone(ctx.dry_run):
+                            if install_home_manager_standalone(ctx):
                                 return
                             raise Exception(
                                 "All home manager installation methods failed"
@@ -742,69 +744,12 @@ def install_home_manager(ctx: InstallContext):
                 ctx.console.print(
                     "[yellow]Permission denied when updating channels.[/yellow]"
                 )
-                if install_home_manager_standalone(ctx.dry_run):
+                if install_home_manager_standalone(ctx):
                     return
             raise Exception(f"Home Manager installation failed: {e}")
 
-        nix_shell_cmd = "nix-shell"
-        for path in os.environ.get("PATH", "").split(":"):
-            nix_shell = Path(path) / "nix-shell"
-            if nix_shell.exists():
-                nix_shell_cmd = str(nix_shell)
-                break
-
-        try:
-            ctx.console.print("[yellow]Running home-manager installation...[/yellow]")
-            result = subprocess.run(
-                [nix_shell_cmd, "<home-manager>", "-A", "install"],
-                check=False,
-                capture_output=True,
-                text=True,
-            )
-
-            if result.returncode != 0:
-                ctx.console.print(
-                    f"[red]Home Manager installation failed: {result.stderr}[/red]"
-                )
-                raise Exception("Home Manager installation failed")
-
-            ctx.console.print("[green]Home Manager installed successfully![/green]")
-        except Exception as e:
-            ctx.console.print(f"[yellow]Error during installation: {e}[/yellow]")
-            ctx.console.print("[yellow]Trying direct installation...[/yellow]")
-
-            if install_home_manager_standalone(ctx.dry_run):
-                return
-
-            raise Exception("All Home Manager installation methods failed")
-
     except Exception as e:
         ctx.console.print(f"[bold red]Error installing Home Manager: {e}[/bold red]")
-        ctx.console.print(
-            "[yellow]Please try installing Home Manager manually using one "
-            "of these methods:[/yellow]"
-        )
-        ctx.console.print("\n[bold]Method 1: nix-env[/bold]")
-        ctx.console.print("Run: nix-env -iA nixpkgs.home-manager")
-
-        ctx.console.print("\n[bold]Method 2: Flakes[/bold]")
-        ctx.console.print("Run: nix profile install github:nix-community/home-manager")
-        ctx.console.print("Then add to your shell config file:")
-        ctx.console.print(
-            "export NIX_PATH=$HOME/.nix-defexpr/channels:/nix/var/nix/"
-            "profiles/per-user/root/channels${NIX_PATH:+:$NIX_PATH}"
-        )
-
-        ctx.console.print("\n[bold]Method 3: Channels[/bold]")
-        ctx.console.print(
-            "1. nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs"
-        )
-        ctx.console.print(
-            "2. nix-channel --add https://github.com/nix-community/"
-            "home-manager/archive/master.tar.gz home-manager"
-        )
-        ctx.console.print("3. nix-channel --update")
-        ctx.console.print("4. nix-shell '<home-manager>' -A install")
         sys.exit(1)
 
 
@@ -1873,7 +1818,8 @@ def apply_home_manager(ctx: InstallContext):
                 "-b",
                 "backup",
                 "--impure",
-            ]
+            ],
+            console=ctx.console,
         )
     except Exception as e:
         ctx.console.print(
