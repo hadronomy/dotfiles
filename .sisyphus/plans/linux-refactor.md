@@ -27,7 +27,7 @@ User wants to commit current local changes, reconcile with remote (prioritizing 
   - Verify: `git status` is clean.
 
 ### Phase 2: Core Refactoring
-- [ ] 2. Refactor `flake.nix` for Multi-Arch
+- [x] 2. Refactor `flake.nix` for Multi-Arch
   **What to do**:
   - Change `systems` to include `"x86_64-linux"`.
   - Create a reusable `mkHome` function or define `homeConfigurations."hadronomy-linux"`.
@@ -36,14 +36,14 @@ User wants to commit current local changes, reconcile with remote (prioritizing 
   **References**:
   - `flake.nix:38` (Outputs)
 
-- [ ] 3. Refactor `home/default.nix` for Path Compatibility
+- [x] 3. Refactor `home/default.nix` for Path Compatibility
   **What to do**:
   - Replace hardcoded `/Users/${config.home.username}` with conditional logic.
   - Use `pkgs.stdenv.isDarwin` to decide home directory path.
   **References**:
   - `home/default.nix:15` (Home Directory)
 
-- [ ] 4. Update `install.sh` for Linux Detection
+- [x] 4. Update `install.sh` for Linux Detection
   **What to do**:
   - Add OS detection (uname).
   - If Linux, use flake output `#hadronomy-linux`.

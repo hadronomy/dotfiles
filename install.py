@@ -1857,13 +1857,28 @@ def apply_home_manager(dry_run=False):
         return
 
     console.print("[bold]Applying Home Manager configuration...[/bold]")
+    
+    # Detect OS and select appropriate flake output
+    system = platform.system()
+    if system == "Darwin":
+        flake_output = "#hadronomy"
+    elif system == "Linux":
+        flake_output = "#hadronomy-linux"
+    else:
+        console.print(
+            f"[bold red]Unsupported operating system: {system}[/bold red]"
+        )
+        sys.exit(1)
+    
+    console.print(f"[dim]Detected OS: {system}, using flake output: {flake_output}[/dim]")
+    
     try:
         run_command(
             [
                 "home-manager",
                 "switch",
                 "--flake",
-                DOTFILES_DIR,
+                f"{DOTFILES_DIR}{flake_output}",
                 "-b",
                 "backup",
                 "--impure",
