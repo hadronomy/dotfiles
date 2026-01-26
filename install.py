@@ -60,14 +60,31 @@ def run_command(
     command, check=True, shell=False, dry_run=False, env=None, console=None
 ):
     """Runs a shell command and streams the output in real-time with rich
-    formatting."""
+    formatting.
+
+    Args:
+        command: Command to run (list of args or string if shell=True)
+        check: Raise CalledProcessError if command fails (default: True)
+        shell: Run command through shell (default: False)
+        dry_run: Print command without executing (default: False)
+        env: Environment variables dict (default: None)
+        console: Rich Console instance (default: creates new Console)
+
+    Returns:
+        subprocess.Popen object on success, None on dry_run or error
+
+    Raises:
+        subprocess.CalledProcessError: If check=True and command fails
+        FileNotFoundError: If command executable not found
+    """
     if console is None:
         console = Console()
 
+    # Build command string for display (safely quoted)
     if not shell:
-        cmd_str = " ".join(shlex.quote(arg) for arg in command)
+        cmd_str = " ".join(shlex.quote(str(arg)) for arg in command)
     else:
-        cmd_str = command
+        cmd_str = command if isinstance(command, str) else " ".join(command)
 
     if dry_run:
         console.print(
@@ -77,7 +94,9 @@ def run_command(
         return None
 
     console.print(f"[bold blue]Running:[/bold blue] {cmd_str}")
+
     try:
+        # Use Popen for real-time streaming output
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -87,33 +106,47 @@ def run_command(
             env=env,
         )
 
+        # Stream output line by line
         while True:
+            # Read from both stdout and stderr
             stdout_line = process.stdout.readline() if process.stdout else ""
             stderr_line = process.stderr.readline() if process.stderr else ""
 
+            # Print non-empty lines
             if stdout_line:
-                console.print(stdout_line.strip())
+                console.print(stdout_line.rstrip())
             if stderr_line:
-                console.print(f"[dim]{stderr_line.strip()}[/dim]")
+                console.print(f"[dim]{stderr_line.rstrip()}[/dim]")
 
+            # Exit when both streams are empty and process has finished
             if not stdout_line and not stderr_line and process.poll() is not None:
                 break
 
-        return_code = process.returncode
-        if check and return_code != 0:
-            raise subprocess.CalledProcessError(return_code, command)
+        # Check exit code
+        if check and process.returncode != 0:
+            cmd_display = cmd_str if len(cmd_str) <= 100 else f"{cmd_str[:97]}..."
+            raise subprocess.CalledProcessError(
+                process.returncode, command, output=f"Command failed: {cmd_display}"
+            )
 
         return process
 
     except subprocess.CalledProcessError as e:
+        cmd_display = cmd_str if len(cmd_str) <= 100 else f"{cmd_str[:97]}..."
         console.print(
-            f"[bold red]Command failed with error code {e.returncode}[/bold red]"
+            f"[bold red]Command failed with exit code {e.returncode}:[/bold red]\n"
+            f"  {cmd_display}"
         )
         if not dry_run:
             raise
         return None
+
     except FileNotFoundError as e:
-        console.print(f"[bold red]Command not found: {e}[/bold red]")
+        cmd_name = command[0] if isinstance(command, list) else command.split()[0]
+        console.print(
+            f"[bold red]Command not found:[/bold red] {cmd_name}\n"
+            f"  Make sure the command is installed and in your PATH"
+        )
         if not dry_run:
             raise
         return None
