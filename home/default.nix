@@ -12,7 +12,7 @@ in
   programs.nix-index.enable = true;
 
   home.username = "hadronomy";
-  home.homeDirectory = "/home/${config.home.username}";
+  home.homeDirectory = "/Users/${config.home.username}";
   xdg.enable = true;
 
   home.sessionVariables = {
@@ -50,7 +50,7 @@ in
     lychee
     earthly
     pixi
-    superfile
+    # superfile
     ngrok
     nh
   ];

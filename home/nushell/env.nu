@@ -28,5 +28,6 @@ $env.PATH = (
     | append ($env.HOME | path join android-sdk cmdline-tools bin)
     | append "/mnt/c/Program Files/Microsoft VS Code/bin"
     | append "/mnt/c/Windows/System32/OpenSSH"
+    | append "/opt/homebrew/bin"
     | uniq
 )
