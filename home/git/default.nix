@@ -15,7 +15,7 @@ in
         format = mkForce "ssh";
       };
     };
-    extraConfig = {
+    settings = {
       user = {
         name = "Pablo Hernández";
         email = "17086478+hadronomy@users.noreply.github.com";
@@ -34,10 +34,8 @@ in
         if isWSL then
         {
           program = "/mnt/c/Users/pablo/AppData/Local/1Password/app/8/op-ssh-sign-wsl";
-        }
-        else
-        {
-          program = "/opt/1Password/op-ssh-sign";
+        } else {
+          program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign";
         }
       );
       commit = {
@@ -57,21 +55,22 @@ in
           required = true;
         };
       };
-    };
-    delta = {
-      enable = true;
-      options = {
-        navigate = true;
-        sideBySide = true;
-        lineNumbers = true;
-        hyperlinks = true;
-        hyperlinksFileLinkFormat = mkIf (isWSL) "vscode://file//wsl.localhost/Arch{path}:{line}";
-        dark = true;
+      aliases = {
+        fixup = "!git log -n 50 --pretty=format:\"%h %s\" --no-merges | fzf | cut -c -7 | xargs -o git commit --fixup";
+        squash-all = "!f(){ git reset $(git commit-tree \"HEAD^{tree}\" \"$@\");};f";
       };
     };
-    aliases = {
-      fixup = "!git log -n 50 --pretty=format:\"%h %s\" --no-merges | fzf | cut -c -7 | xargs -o git commit --fixup";
-      squash-all = "!f(){ git reset $(git commit-tree \"HEAD^{tree}\" \"$@\");};f";
+  };
+  programs.delta = {
+    enable = true;
+    enableGitIntegration = true;
+    options = {
+      navigate = true;
+      sideBySide = true;
+      lineNumbers = true;
+      hyperlinks = true;
+      hyperlinksFileLinkFormat = mkIf (isWSL) "vscode://file//wsl.localhost/Arch{path}:{line}";
+      dark = true;
     };
   };
 }

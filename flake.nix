@@ -41,13 +41,13 @@
     let
       inherit (self) outputs;
 
-      system = "x86_64-linux";
+      system = "aarch64-darwin";
       systems = [
-        "x86_64-linux"
+        "aarch64-darwin"
       ];
 
       pkgs = import nixpkgs {
-        system = "x86_64-linux";
+        system = "aarch64-darwin";
         config = {
           allowUnfree = true;
           permittedInsecurePackages = [
