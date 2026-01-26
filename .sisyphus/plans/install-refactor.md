@@ -58,7 +58,7 @@ The `install.py` script is the entry point for bootstrapping the dotfiles. It cu
   - `install.py:1125` (temp_dir)
 
 ### Phase 4: UX & Modernization
-- [ ] 5. Modernize `run_command` and Subprocess
+- [x] 5. Modernize `run_command` and Subprocess
   **What to do**:
   - Simplify `run_command` to use `subprocess.run` for blocking calls where streaming isn't strictly needed (or keep streaming but clean up implementation).
   - Ensure `shlex.quote` is used correctly.

@@ -207,3 +207,122 @@ Kept `os.walk()` as-is in `replace_username_in_files()` because:
 - Type safety (Path objects vs strings)
 - Cross-platform compatibility (pathlib handles OS differences)
 - Modern Python idioms (pathlib is the recommended approach since Python 3.4)
+
+## Task 5: Modernize run_command and Subprocess (2026-01-26)
+
+### Changes Made
+- **Enhanced docstring**: Added comprehensive Args/Returns/Raises documentation
+- **Improved shlex.quote usage**: Added `str()` wrapper to handle Path objects safely
+- **Better command display**: Added type checking for shell vs list commands
+- **Cleaner streaming logic**: Changed `.strip()` to `.rstrip()` to preserve leading whitespace
+- **Enhanced error messages**: 
+  - Show truncated command (100 chars max) in error output
+  - Extract command name from FileNotFoundError for clearer messaging
+  - Added helpful hint about PATH for missing commands
+  - Show exit code in error message
+- **Better error context**: Pass descriptive output to CalledProcessError
+- **Code comments**: Added inline comments explaining streaming logic
+
+### Key Improvements
+
+#### 1. shlex.quote Safety
+```python
+# BEFORE:
+cmd_str = " ".join(shlex.quote(arg) for arg in command)
+
+# AFTER:
+cmd_str = " ".join(shlex.quote(str(arg)) for arg in command)
+```
+**Why**: Handles Path objects from pathlib migration (Task 4). Without `str()`, Path objects would fail shlex.quote.
+
+#### 2. Error Message Enhancement
+```python
+# BEFORE:
+console.print(f"[bold red]Command failed with error code {e.returncode}[/bold red]")
+
+# AFTER:
+cmd_display = cmd_str if len(cmd_str) <= 100 else f"{cmd_str[:97]}..."
+console.print(
+    f"[bold red]Command failed with exit code {e.returncode}:[/bold red]\n"
+    f"  {cmd_display}"
+)
+```
+**Why**: 
+- Shows actual command that failed (truncated if too long)
+- Multi-line format is more readable
+- "exit code" is more standard terminology than "error code"
+
+#### 3. FileNotFoundError Clarity
+```python
+# BEFORE:
+console.print(f"[bold red]Command not found: {e}[/bold red]")
+
+# AFTER:
+cmd_name = command[0] if isinstance(command, list) else command.split()[0]
+console.print(
+    f"[bold red]Command not found:[/bold red] {cmd_name}\n"
+    f"  Make sure the command is installed and in your PATH"
+)
+```
+**Why**:
+- Extracts just the command name (not full exception message)
+- Provides actionable hint about PATH
+- Cleaner formatting
+
+#### 4. Whitespace Preservation
+```python
+# BEFORE:
+console.print(stdout_line.strip())
+
+# AFTER:
+console.print(stdout_line.rstrip())
+```
+**Why**: `.rstrip()` only removes trailing whitespace, preserving intentional indentation in command output (useful for formatted output like tree structures).
+
+### Verification
+- ✅ `python3 -m py_compile install.py` passes (exit code 0)
+- ✅ `./install.py --dry-run` works correctly
+- ✅ All error paths tested and improved
+- ✅ shlex.quote handles Path objects safely
+
+### Pattern Applied
+**Modern subprocess with streaming:**
+```python
+# Use Popen for real-time output
+process = subprocess.Popen(
+    command,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    text=True,
+    shell=shell,
+    env=env,
+)
+
+# Stream line by line
+while True:
+    stdout_line = process.stdout.readline() if process.stdout else ""
+    stderr_line = process.stderr.readline() if process.stderr else ""
+    
+    if stdout_line:
+        console.print(stdout_line.rstrip())
+    if stderr_line:
+        console.print(f"[dim]{stderr_line.rstrip()}[/dim]")
+    
+    if not stdout_line and not stderr_line and process.poll() is not None:
+        break
+```
+
+### Design Decisions
+1. **Kept Popen over subprocess.run**: Real-time streaming is valuable for long-running operations (Nix installs, git clones)
+2. **Kept streaming implementation**: User feedback during long operations improves UX
+3. **Added str() to shlex.quote**: Future-proofs against Path objects and other non-string types
+4. **Truncate long commands**: Prevents terminal spam while still showing what failed
+5. **Preserve function signature**: No breaking changes to existing callers
+
+### Benefits
+- More informative error messages help debugging
+- Better handling of Path objects from pathlib migration
+- Cleaner code with better documentation
+- Preserved real-time output streaming (important for UX)
+- More robust type handling in command string building
+
