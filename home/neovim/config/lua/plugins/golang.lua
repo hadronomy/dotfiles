@@ -50,7 +50,7 @@ return {
         gopls = function(_, opts)
           -- workaround for gopls not supporting semanticTokensProvider
           -- https://github.com/golang/go/issues/54531#issuecomment-1464982242
-          LazyVim.lsp.on_attach(function(client, _)
+          Snacks.util.lsp.on({ name = "gopls" }, function(buffer, client)
             if not client.server_capabilities.semanticTokensProvider then
               local semantic = client.config.capabilities.textDocument.semanticTokens
               if not semantic then
@@ -66,14 +66,14 @@ return {
                 range = true,
               }
             end
-          end, "gopls")
+          end)
           -- end workaround
         end,
       },
     },
   },
   {
-    "williamboman/mason.nvim",
+    "mason-org/mason.nvim",
     opts = { ensure_installed = { "goimports", "gofumpt", "gomodifytags", "impl", "delve" } },
   },
   {
@@ -81,7 +81,7 @@ return {
     optional = true,
     dependencies = {
       {
-        "williamboman/mason.nvim",
+        "mason-org/mason.nvim",
         opts = { ensure_installed = { "delve" } },
       },
       {
@@ -95,7 +95,7 @@ return {
     opts = {},
   },
   {
-    "echasnovski/mini.icons",
+    "nvim-mini/mini.icons",
     opts = {
       file = {
         [".go-version"] = { glyph = "", hl = "MiniIconsBlue" },
@@ -110,7 +110,7 @@ return {
     optional = true,
     dependencies = {
       {
-        "williamboman/mason.nvim",
+        "mason-org/mason.nvim",
         opts = { ensure_installed = { "gomodifytags", "impl" } },
       },
     },

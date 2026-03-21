@@ -31,6 +31,7 @@ $env.config = {
 
 # Alises / tools
 alias y = yazi
+alias o = ^open
 
 # Uses fzf to search for a file in the current directory or
 # the directory passed as an argument

@@ -104,7 +104,7 @@ return {
           return true
         end,
         vtsls = function(_, opts)
-          LazyVim.lsp.on_attach(function(client, buffer)
+          Snacks.util.lsp.on({ method = "vtsls" }, function(buffer, client)
             client.commands["_typescript.moveToFileRefactoring"] = function(command, ctx)
               ---@type string, string, lsp.Range
               local action, uri, range = unpack(command.arguments)
@@ -153,7 +153,7 @@ return {
                 end)
               end)
             end
-          end, "vtsls")
+          end)
           -- copy typescript settings to javascript
           opts.settings.javascript =
             vim.tbl_deep_extend("force", {}, opts.settings.typescript, opts.settings.javascript or {})
@@ -162,14 +162,14 @@ return {
     },
   },
   {
-    "williamboman/mason.nvim",
+    "mason-org/mason.nvim",
     opts = function(_, opts)
       opts.ensure_installed = opts.ensure_installed or {}
       table.insert(opts.ensure_installed, "js-debug-adapter")
     end,
   },
   {
-    "echasnovski/mini.icons",
+    "nvim-mini/mini.icons",
     opts = {
       file = {
         [".eslintrc.js"] = { glyph = "󰱺", hl = "MiniIconsYellow" },

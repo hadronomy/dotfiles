@@ -21,7 +21,7 @@ return {
       workspaces = {
         {
           name = "personal",
-          path = "~/obsidian-vault",
+          path = "~/brain/content",
         },
       },
       attachments = {

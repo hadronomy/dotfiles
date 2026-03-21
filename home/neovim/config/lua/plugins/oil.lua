@@ -2,7 +2,7 @@ return {
   {
     "stevearc/oil.nvim",
     opts = {},
-    dependencies = { "echasnovski/mini.icons" },
+    dependencies = { "nvim-mini/mini.icons" },
     config = function()
       require("oil").setup({
         default_file_explorer = true,
