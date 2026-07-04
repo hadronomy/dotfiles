@@ -9,6 +9,9 @@ in
       defaultEditor = true;
       viAlias = true;
       vimAlias = true;
+      sideloadInitLua = true;
+      withPython3 = true;
+      withRuby = true;
     };
   };
 

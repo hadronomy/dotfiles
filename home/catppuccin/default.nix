@@ -1,4 +1,7 @@
 { pkgs, lib, ... }:
 {
-  catppuccin.enable = true;
+  catppuccin = {
+    enable = true;
+    autoEnable = true;
+  };
 }
