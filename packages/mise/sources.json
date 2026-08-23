@@ -1,0 +1,13 @@
+{
+  "version": "2026.8.10",
+  "platforms": {
+    "aarch64-darwin": {
+      "url": "https://github.com/jdx/mise/releases/download/v2026.8.10/mise-v2026.8.10-macos-arm64.tar.gz",
+      "hash": "sha256-rG7VMhXnCr+yIFJK7RIb8C29P71KGTVQMt0cWhCPshI="
+    },
+    "x86_64-linux": {
+      "url": "https://github.com/jdx/mise/releases/download/v2026.8.10/mise-v2026.8.10-linux-x64-musl.tar.gz",
+      "hash": "sha256-X2aYdsd+Q+aMBNT0V6DbF9ZSm78xc0KdgNrCd2NHQFU="
+    }
+  }
+}

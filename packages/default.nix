@@ -15,4 +15,7 @@
       chmod +x $out/bin/hello-world-fzf
     '';
   };
+
+  # Overrides the nixpkgs source build with jdx's release binary. See ./mise.
+  mise = pkgs.callPackage ./mise { };
 }

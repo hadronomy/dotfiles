@@ -32,7 +32,6 @@
     };
 
     catppuccin.url = "github:catppuccin/nix";
-    mise.url = "github:jdx/mise";
   };
 
   outputs =
@@ -47,20 +46,22 @@
         "x86_64-linux"
       ];
 
-      mkPkgs = system: import nixpkgs {
-        inherit system;
-        config = {
-          allowUnfree = true;
-          permittedInsecurePackages = [
-            "electron-25.9.0"
-          ];
+      mkPkgs =
+        system:
+        import nixpkgs {
+          inherit system;
+          overlays = [ self.overlays.additions ];
+          config = {
+            allowUnfree = true;
+            permittedInsecurePackages = [
+              "electron-25.9.0"
+            ];
+          };
         };
-      };
 
       mkFlakePkgs = system: {
         bash-env-json = bash-env-json.packages.${system}.default;
         bash-env-nushell = bash-env-nushell.packages.${system}.default;
-        mise = mise.packages.${system}.default;
       };
 
       forAllSystems = nixpkgs.lib.genAttrs systems;
@@ -73,7 +74,7 @@
     {
       formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
 
-      overlays.additions = final: _prev: import ./packages final.pkgs;
+      overlays.additions = final: _prev: import ./packages { pkgs = final; };
 
       overlays.unstable = final: prev: {
         unstable = import nixpkgs-unstable {
@@ -87,28 +88,28 @@
         nur.overlay
       ];
 
-      packages = forAllSystems (system:
+      packages = forAllSystems (
+        system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
         in
         {
-          cloneDotfiles = pkgs.writeShellScriptBin "clone-dotfiles"
-            ''
-              if [ ! -d "${dotfilesDir}" ]; then
-                echo "Cloning dotfiles repository..."
-                mkdir -p $(dirname "${dotfilesDir}")
-                git clone --depth 1 ${repoUrl} "${dotfilesDir}"
-              else
-                echo "Dotfiles repository already exists."
-              fi
-            '';
+          cloneDotfiles = pkgs.writeShellScriptBin "clone-dotfiles" ''
+            if [ ! -d "${dotfilesDir}" ]; then
+              echo "Cloning dotfiles repository..."
+              mkdir -p $(dirname "${dotfilesDir}")
+              git clone --depth 1 ${repoUrl} "${dotfilesDir}"
+            else
+              echo "Dotfiles repository already exists."
+            fi
+          '';
 
-          apply = pkgs.writeShellScriptBin "apply-dotfiles"
-            ''
-              ${self.packages.${system}.cloneDotfiles}/bin/clone-dotfiles
-              home-manager switch --flake ${dotfilesDir} -b backup --impure
-            '';
-        });
+          apply = pkgs.writeShellScriptBin "apply-dotfiles" ''
+            ${self.packages.${system}.cloneDotfiles}/bin/clone-dotfiles
+            home-manager switch --flake ${dotfilesDir} -b backup --impure
+          '';
+        }
+      );
 
       defaultPackage = forAllSystems (system: self.packages.${system}.apply);
 
@@ -118,12 +119,14 @@
           extraSpecialArgs = {
             flakePkgs = mkFlakePkgs "aarch64-darwin";
             disableCustomSSHAgent = false;
-          } // inputs;
+          }
+          // inputs;
 
           modules = [
             ./home
             catppuccin.homeModules.catppuccin
-          ] ++ builtins.attrValues self.homeManagerModules;
+          ]
+          ++ builtins.attrValues self.homeManagerModules;
         };
 
         hadronomy-linux = home-manager.lib.homeManagerConfiguration {
@@ -131,12 +134,14 @@
           extraSpecialArgs = {
             flakePkgs = mkFlakePkgs "x86_64-linux";
             disableCustomSSHAgent = false;
-          } // inputs;
+          }
+          // inputs;
 
           modules = [
             ./home
             catppuccin.homeModules.catppuccin
-          ] ++ builtins.attrValues self.homeManagerModules;
+          ]
+          ++ builtins.attrValues self.homeManagerModules;
         };
       };
 
@@ -147,7 +152,8 @@
         }) (builtins.attrNames (builtins.readDir ./modules/hm))
       );
 
-      devShells = forAllSystems (system:
+      devShells = forAllSystems (
+        system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
         in
@@ -155,21 +161,22 @@
           default = pkgs.mkShellNoCC {
             buildInputs = with pkgs; [
               self.packages.${system}.apply
-            (writeScriptBin "dot-clean" ''
-              nix-collect-garbage -d --delete-older-than 30d
-            '')
-            (writeScriptBin "dot-sync" ''
-              cd "${dotfilesDir}"
-              git pull --rebase origin main
-              nix flake update
-              dot-clean
-              dot-apply
-            '')
-            (writeScriptBin "dot-apply" ''
-              ${self.packages.${system}.apply}/bin/apply-dotfiles
-            '')
+              (writeScriptBin "dot-clean" ''
+                nix-collect-garbage -d --delete-older-than 30d
+              '')
+              (writeScriptBin "dot-sync" ''
+                cd "${dotfilesDir}"
+                git pull --rebase origin main
+                nix flake update
+                dot-clean
+                dot-apply
+              '')
+              (writeScriptBin "dot-apply" ''
+                ${self.packages.${system}.apply}/bin/apply-dotfiles
+              '')
             ];
           };
-        });
+        }
+      );
     };
 }
