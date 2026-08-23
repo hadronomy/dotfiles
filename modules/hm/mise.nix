@@ -116,17 +116,25 @@ in
         ${getExe cfg.package} activate fish | source
       '';
 
+      # Generated at build time and used straight from the store. Writing it at
+      # runtime cannot work: nushell resolves the file at parse time, so config.nu
+      # always saw the previous run's copy. The store path also keeps a reference
+      # to the mise binary it came from, so the GC cannot collect it out from
+      # under a shell that is about to source it.
+      #
+      # The extra directory is what makes the module name `mise` instead of the
+      # store hash. `activate nu` ends in `export def --env --wrapped main`, and
+      # that only binds to `mise` when the module is named `mise` -- which is what
+      # lets `mise shell` and `mise deactivate` change the current environment
+      # rather than a subprocess's.
       nushell = mkIf cfg.enableNushellIntegration {
-        extraEnv = ''
-          let mise_cache = "${config.xdg.cacheHome}/mise"
-          if not ($mise_cache | path exists) {
-            mkdir $mise_cache
-          }
-          ${cfg.package}/bin/mise activate nu |
-            save --force ${config.xdg.cacheHome}/mise/init.nu
-        '';
         extraConfig = ''
-          source ${config.xdg.cacheHome}/mise/init.nu
+          use ${
+            pkgs.runCommand "mise-nu" { } ''
+              mkdir -p $out
+              ${getExe cfg.package} activate nu > $out/mise.nu
+            ''
+          }/mise.nu
         '';
       };
     };
