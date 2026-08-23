@@ -34,13 +34,42 @@
     };
   };
 
-  # zsh is not a configured shell here, but every agent CLI shells out through
-  # it -- and Claude Code rebuilds its whole environment from a zsh snapshot,
-  # so it never sees the mise activation that fish and nushell get. .zshenv is
-  # the only file a non-interactive `zsh -c` reads, which makes it the one place
-  # that reaches all of them. Shims rather than `mise activate`: activation
-  # needs a prompt hook that never fires in a non-interactive shell.
-  home.file.".zshenv".text = ''
-    export PATH="$HOME/.local/share/mise/shims:$PATH"
-  '';
+  # mise activates only in fish and nushell, but agent CLIs shell out through
+  # zsh and bash. Shims rather than `mise activate`: activation costs ~27ms per
+  # shell, and shims already carry [env] through to the tool they launch.
+  #
+  # Prepended in each file rather than set once, because macOS path_helper
+  # (/etc/zprofile -> /etc/profile) rebuilds PATH in every login shell and would
+  # otherwise leave Homebrew's node ahead of mise's. Each file below runs after
+  # the reordering that affects it.
+  home.file =
+    let
+      shims = ''
+        export PATH="$HOME/.local/share/mise/shims:$PATH"
+      '';
+    in
+    {
+      # zsh -c: the only file a non-interactive zsh reads. Login shells skip
+      # it and let .zprofile do the work, so PATH gets one entry, not two.
+      ".zshenv".text = ''
+        [[ -o login ]] || export PATH="$HOME/.local/share/mise/shims:$PATH"
+      '';
+
+      # zsh -lc: runs after /etc/zprofile, so this re-wins the ordering.
+      ".zprofile".text = shims;
+
+      # bash -c reads neither of these, but codex's profile snapshot sources
+      # .bashrc directly, and bash -lc falls back to .profile when there is no
+      # .bash_profile. Both keep the lines that were already there.
+      ".bashrc".text = ''
+        export PATH="$PATH:$HOME/.local/bin"
+      ''
+      + shims;
+
+      ".profile".text = ''
+        . "$HOME/.local/bin/env"
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+      ''
+      + shims;
+    };
 }
