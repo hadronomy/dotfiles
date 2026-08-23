@@ -12,7 +12,8 @@ in
   programs.nix-index.enable = true;
 
   home.username = "hadronomy";
-  home.homeDirectory = if pkgs.stdenv.isDarwin then "/Users/${config.home.username}" else "/home/${config.home.username}";
+  home.homeDirectory =
+    if pkgs.stdenv.isDarwin then "/Users/${config.home.username}" else "/home/${config.home.username}";
   xdg.enable = true;
 
   home.sessionVariables = {

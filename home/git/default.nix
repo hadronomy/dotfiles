@@ -32,11 +32,13 @@ in
       };
       gpg.ssh = mkIf (!disableSSHAgent) (
         if isWSL then
-        {
-          program = "/mnt/c/Users/pablo/AppData/Local/1Password/app/8/op-ssh-sign-wsl";
-        } else {
-          program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign";
-        }
+          {
+            program = "/mnt/c/Users/pablo/AppData/Local/1Password/app/8/op-ssh-sign-wsl";
+          }
+        else
+          {
+            program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign";
+          }
       );
       commit = {
         gpgsign = true;
