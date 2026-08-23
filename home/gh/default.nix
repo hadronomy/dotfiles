@@ -15,6 +15,7 @@
     };
     extensions = with pkgs; [
       gh-dash
+      gh-stack
     ];
   };
 }
