@@ -72,21 +72,6 @@ in
         '';
       };
 
-      settings = mkOption {
-        type = tomlFormat.type;
-        default = { };
-        example = literalExpression ''
-          verbose = false;
-          experimental = false;
-          disable_tools = ["node"];
-        '';
-        description = ''
-          Settings written to {file}`$XDG_CONFIG_HOME/mise/settings.toml`.
-
-          See <https://mise.jdx.dev/configuration.html#settings-file-config-mise-settings-toml>
-          for details on supported values.
-        '';
-      };
     };
   };
 
@@ -98,9 +83,6 @@ in
         source = tomlFormat.generate "mise-config" cfg.globalConfig;
       };
 
-      "mise/settings.toml" = mkIf (cfg.settings != { }) {
-        source = tomlFormat.generate "mise-settings" cfg.settings;
-      };
     };
 
     programs = {
