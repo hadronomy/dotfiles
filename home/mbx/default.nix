@@ -29,6 +29,15 @@
       #!/bin/sh
       real_cargo="''${MBX_REAL_CARGO:-$HOME/.nix-profile/bin/cargo}"
 
+      # mbx sets RUSTC_WRAPPER to its own rustc shim before it spawns cargo.
+      # Seeing it means mbx is the caller and wants the real binary -- this is
+      # what keeps a direct `mbx build` from re-entering mbx through here. A
+      # foreign RUSTC_WRAPPER (sccache) also lands here, which is right: do not
+      # fight a wrapper the user chose.
+      case "''${RUSTC_WRAPPER:-}" in
+        *mbx-rustc*) exec "$real_cargo" "$@" ;;
+      esac
+
       if [ -n "''${MBX_CARGO_SHIM:-}" ]; then
         exec "$real_cargo" "$@"
       fi
