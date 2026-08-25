@@ -16,6 +16,7 @@ let
   # reaches the wrapper rather than rustup's own shim.
   path = ''
     export PATH="$HOME/.local/share/agent-bin:$HOME/.local/share/mise/shims:$PATH"
+    export LIBRARY_PATH="/opt/homebrew/opt/libiconv/lib''${LIBRARY_PATH:+:$LIBRARY_PATH}"
   '';
 in
 {
@@ -23,7 +24,8 @@ in
     # zsh -c: the only file a non-interactive zsh reads. Login shells skip it
     # and let .zprofile do the work, so PATH gets one entry, not two.
     ".zshenv".text = ''
-      [[ -o login ]] || export PATH="$HOME/.local/share/agent-bin:$HOME/.local/share/mise/shims:$PATH"
+      if [[ ! -o login ]]; then
+      ${path}fi
     '';
 
     # zsh -lc: runs after /etc/zprofile, so this re-wins the ordering.
