@@ -11,11 +11,11 @@
 # reordering that affects it.
 { ... }:
 let
-  # agent-bin holds the cargo -> mbx wrapper (see ../mbx). It goes ahead of the
-  # shims so `cargo` reaches the wrapper, and ahead of the nix profile so it
-  # reaches the wrapper rather than rustup's own shim.
+  # cargo-shim holds the cargo -> mbx wrapper (see ../mbx). It goes ahead of
+  # the nix profile so `cargo` reaches the wrapper rather than rustup's shim.
+  # fish and nushell add the same directory in their own modules.
   path = ''
-    export PATH="$HOME/.local/share/agent-bin:$HOME/.local/share/mise/shims:$PATH"
+    export PATH="$HOME/.local/share/cargo-shim:$HOME/.local/share/mise/shims:$PATH"
     case ":''${LIBRARY_PATH:-}:" in
       *":/opt/homebrew/opt/libiconv/lib:"*) ;;
       *) export LIBRARY_PATH="/opt/homebrew/opt/libiconv/lib''${LIBRARY_PATH:+:$LIBRARY_PATH}" ;;

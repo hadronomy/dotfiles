@@ -36,13 +36,15 @@
     root = "/Volumes/Yggdrasil/mbx/targets"
   '';
 
-  # `cargo` routed through mbx for the shells agents use. mbx resolves cargo
-  # from PATH -- which is this script -- so without the guard it would invoke
-  # itself forever. On re-entry the guard hands mbx the real binary.
+  # `cargo` routed through mbx for agents. fish and nushell use a plain alias
+  # instead; this exists because non-interactive shells expand no aliases and
+  # agents exec cargo directly. mbx resolves cargo from PATH -- which is this
+  # script -- so without the guard it would invoke itself forever. On re-entry
+  # the guard hands mbx the real binary.
   #
   # Leading flags go straight to cargo: `cargo --version` has to answer as
   # cargo, or anything that parses that version gets mbx's instead.
-  home.file.".local/share/agent-bin/cargo" = {
+  home.file.".local/share/cargo-shim/cargo" = {
     executable = true;
     text = ''
       #!/bin/sh
