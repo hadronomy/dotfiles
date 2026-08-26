@@ -6,15 +6,6 @@
 # copying them. Splitting them across volumes would silently lose that.
 { ... }:
 {
-  # libiconv comes from the environment rather than a `-L` rustflag. Build
-  # scripts here (blake3, zstd-sys) link -liconv and fail without it, so the
-  # search path is load-bearing -- but mbx cannot cache any compilation that
-  # carries a rustc search path, and reports every one as
-  # `unsupported-search-path`. LIBRARY_PATH reaches the linker without rustc
-  # ever seeing a -L, which keeps the build working and the cache usable:
-  # measured 0 -> 183 hits on a 4-crate workspace.
-  home.sessionVariables.LIBRARY_PATH = "/opt/homebrew/opt/libiconv/lib";
-
   # `-C link-arg=-fuse-ld=lld` is gone for the same reason. Every -C codegen
   # option bypasses the cache as `unknown-codegen-option`, and `-C linker=` to
   # a wrapper script does too -- there is no cacheable way to force lld. The
@@ -22,7 +13,7 @@
   home.file.".cargo/config.toml".text = ''
     # Deliberately carries no rustflags. A `-L` search path or any `-C` option
     # here disables the mbx build cache for every compilation in every project.
-    # libiconv is supplied through LIBRARY_PATH instead; see home/mbx.
+    # libiconv resolves from the macOS SDK through /usr/bin/cc; see home/default.nix.
   '';
 
   # mbx reads the platform config directory, not XDG. On macOS that is

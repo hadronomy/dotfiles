@@ -61,7 +61,7 @@ if ('/etc/profile.d/nix.sh' | path exists) {
 
 # home-manager writes session variables to a POSIX profile script. Nushell
 # reads no profile scripts, so without this every home.sessionVariables entry
-# -- EDITOR, LIBRARY_PATH, GOPATH, the XDG paths -- is set in fish, zsh and
+# -- EDITOR, GOPATH, the XDG paths -- is set in fish, zsh and
 # bash but missing here. The file exports no PATH, so loading it wholesale
 # cannot disturb nushell's list-valued PATH.
 let hm_session_vars = $"($env.HOME)/.nix-profile/etc/profile.d/hm-session-vars.sh"

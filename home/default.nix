@@ -22,7 +22,10 @@ in
 
   home.packages = with pkgs; [
     delta
-    clang
+    # clang is deliberately absent: its wrapper shadows /usr/bin/cc, and it
+    # cannot find the macOS SDK's libiconv, so every crate that links -liconv
+    # (libgit2-sys, zstd-sys, aws-lc-sys) fails from any shell that picks it up.
+    # clang-tools still provides clangd, clang-format and clang-tidy.
     clang-tools
     rustup
     gofumpt

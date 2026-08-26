@@ -16,10 +16,6 @@ let
   # fish and nushell add the same directory in their own modules.
   path = ''
     export PATH="$HOME/.local/share/cargo-shim:$HOME/.local/share/mise/shims:$PATH"
-    case ":''${LIBRARY_PATH:-}:" in
-      *":/opt/homebrew/opt/libiconv/lib:"*) ;;
-      *) export LIBRARY_PATH="/opt/homebrew/opt/libiconv/lib''${LIBRARY_PATH:+:$LIBRARY_PATH}" ;;
-    esac
   '';
 in
 {
