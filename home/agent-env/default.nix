@@ -16,7 +16,10 @@ let
   # reaches the wrapper rather than rustup's own shim.
   path = ''
     export PATH="$HOME/.local/share/agent-bin:$HOME/.local/share/mise/shims:$PATH"
-    export LIBRARY_PATH="/opt/homebrew/opt/libiconv/lib''${LIBRARY_PATH:+:$LIBRARY_PATH}"
+    case ":''${LIBRARY_PATH:-}:" in
+      *":/opt/homebrew/opt/libiconv/lib:"*) ;;
+      *) export LIBRARY_PATH="/opt/homebrew/opt/libiconv/lib''${LIBRARY_PATH:+:$LIBRARY_PATH}" ;;
+    esac
   '';
 in
 {
