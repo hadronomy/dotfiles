@@ -11,11 +11,13 @@
 # reordering that affects it.
 { ... }:
 let
-  # cargo-shim holds the cargo -> mbx wrapper (see ../mbx). It goes ahead of
-  # the nix profile so `cargo` reaches the wrapper rather than rustup's shim.
-  # fish and nushell add the same directory in their own modules.
+  # mise command-wrappers holds the cargo -> mbx shim ([wrappers.cargo] in
+  # ../mise). It goes ahead of the shims farm so the wrapper wins PATH
+  # resolution, and ahead of the nix profile so `cargo` reaches the wrapper
+  # rather than rustup's shim. fish and nushell get wrappers through mise
+  # activate and add the same directory in their own modules.
   path = ''
-    export PATH="$HOME/.local/share/cargo-shim:$HOME/.local/share/mise/shims:$PATH"
+    export PATH="$HOME/.local/share/mise/command-wrappers/bin:$HOME/.local/share/mise/shims:$PATH"
   '';
 in
 {

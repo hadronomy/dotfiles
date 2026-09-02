@@ -115,6 +115,14 @@ in
             pkgs.runCommand "mise-nu" { } ''
               mkdir -p $out
               ${getExe cfg.package} activate nu > $out/mise.nu
+              # mise 2026.9.0 bakes __MISE_ORIG_PATH and PATH as raw strings
+              # into export-env -- here that is the build sandbox's stdenv
+              # PATH, ending in /homeless-shelter, since activate runs at nix
+              # build time. Sourcing it would start every session on that
+              # PATH and hook-env would keep its tail, so ~/.nix-profile and
+              # the shell's own appends vanish. Strip both; the pre_prompt and
+              # PWD hooks set PATH dynamically from the live environment.
+              sed -i '/__MISE_ORIG_PATH = r#/d; /[$]env[.]PATH = r#/d' $out/mise.nu
             ''
           }/mise.nu
         '';
