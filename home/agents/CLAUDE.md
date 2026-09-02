@@ -2,11 +2,15 @@
 
 Prefer the `fff` MCP tool over `grep`/`ripgrep` for code search. Reach for `grep` only when `fff` can't do the job.
 
+Install and update agent skills only with the skills CLI (`bunx skills add/update/...`). Never copy or edit installed SKILL.md files by hand.
+
 Never use `npx`; use `bunx` instead, unless something specifically requires `npx`.
 
 Using `bun` as the package manager does not imply `bun` is also the runtime. Default the runtime to `node` unless the user has explicitly said otherwise (or the project's config/scripts already make the runtime unambiguous, e.g. `bun:` scripts or Bun-only APIs in use). If it's unclear which runtime a project wants, ask.
 
 Use `mbx` (Mr Boxington) instead of `cargo`. It is a caching wrapper: put `mbx` where `cargo` would go and pass the same arguments. It keeps the build cache and target directories on an external volume rather than the internal disk, and reuses compiled work across checkouts and worktrees.
+
+mbx owns those two paths and reads them from its own configuration, so an `mbx` command runs bare — no environment variables in front of it. A project file that tells you to point Cargo somewhere by hand predates mbx: run the command bare, then say so, because that file is stale and worth fixing.
 
 ```bash
 mbx build --release
