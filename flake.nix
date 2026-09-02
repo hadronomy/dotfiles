@@ -66,8 +66,11 @@
 
       forAllSystems = nixpkgs.lib.genAttrs systems;
 
-      # NOTE: Change this to $HOME
-      dotfilesDir = "/home/hadronomy/.dotfiles";
+      # Per system: /Users on darwin, /home on Linux. The apply scripts must
+      # point at the checkout on the machine they run on, not a store copy.
+      mkDotfilesDir =
+        system:
+        (if nixpkgs.lib.hasSuffix "-darwin" system then "/Users" else "/home") + "/hadronomy/.dotfiles";
 
       repoUrl = "https://github.com/hadronomy/dotfiles";
     in
@@ -95,10 +98,10 @@
         in
         {
           cloneDotfiles = pkgs.writeShellScriptBin "clone-dotfiles" ''
-            if [ ! -d "${dotfilesDir}" ]; then
+            if [ ! -d "${mkDotfilesDir system}" ]; then
               echo "Cloning dotfiles repository..."
-              mkdir -p $(dirname "${dotfilesDir}")
-              git clone --depth 1 ${repoUrl} "${dotfilesDir}"
+              mkdir -p $(dirname "${mkDotfilesDir system}")
+              git clone --depth 1 ${repoUrl} "${mkDotfilesDir system}"
             else
               echo "Dotfiles repository already exists."
             fi
@@ -106,7 +109,7 @@
 
           apply = pkgs.writeShellScriptBin "apply-dotfiles" ''
             ${self.packages.${system}.cloneDotfiles}/bin/clone-dotfiles
-            home-manager switch --flake ${dotfilesDir} -b backup --impure
+            home-manager switch --flake ${mkDotfilesDir system} -b backup --impure
           '';
         }
       );
@@ -165,7 +168,7 @@
                 nix-collect-garbage -d --delete-older-than 30d
               '')
               (writeScriptBin "dot-sync" ''
-                cd "${dotfilesDir}"
+                cd "${mkDotfilesDir system}"
                 git pull --rebase origin main
                 nix flake update
                 dot-clean
