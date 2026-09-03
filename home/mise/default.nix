@@ -35,11 +35,14 @@
           "github:jdx/mr-boxington" = "1.4.1";
 
           # Typst document toolchain -- pinned as a set: tinymist and
-          # typstyle track the compiler release. Agents compile-verify
-          # every edit, so the shims must resolve without a project file.
-          typst = "0.15.1";
-          tinymist = "0.15.2";
-          typstyle = "0.15.1";
+          # typstyle track the compiler release. Lazy: bootstrap shims
+          # install each tool on first invocation instead of at switch
+          # time, so agents (and humans) pay the cost only when a .typ
+          # task actually runs. Registry tools derive their bins, so no
+          # lazy_bins needed. See https://mise.jdx.dev/dev-tools/shims.html
+          typst = { version = "0.15.1"; lazy = true; };
+          tinymist = { version = "0.15.2"; lazy = true; };
+          typstyle = { version = "0.15.1"; lazy = true; };
         };
         wrappers.cargo = {
           # Route plain cargo through mbx. MBX_CARGO_SHIM_MODE tells mbx it was
