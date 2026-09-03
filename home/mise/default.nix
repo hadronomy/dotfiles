@@ -19,10 +19,13 @@
           "cargo:cargo-edit" = "latest";
           watchexec = "latest";
           "npm:@antfu/ni" = "latest";
-          dotnet = "latest";
-          zig = "0.14.0";
-          zls = "0.14.0";
           "npm:@google/gemini-cli" = "latest";
+
+          # Executor (executor.sh) -- local MCP gateway. One daemon at
+          # 127.0.0.1:4788 serves every configured integration (MCP, OpenAPI,
+          # GraphQL) to every agent over a single endpoint. See ../agents.
+          "npm:executor" = "latest";
+          dotnet = "latest";
 
           # mbx -- cargo wrapper that keeps the build cache and target dirs on
           # Yggdrasil instead of the internal disk. See ~/Library/Application

@@ -35,6 +35,15 @@ Worktrees are how parallel agents share one repo without stepping on each other.
 
 Raw `git worktree add` bypasses wt's layout and hooks — a hand-made worktree starts cold and lands outside `wt list`'s conventions. Create worktrees with `wt switch --create`.
 
+# Executor
+
+Executor is the shared tool gateway: one local daemon holds every integration (MCP servers, OpenAPI, GraphQL) with auth and per-tool policies, and every agent reaches the same catalog over MCP through a single `execute` tool.
+
+- Need an external API (GitHub, Linear, Sentry, Slack, ...): search the catalog first (`executor tools search "<intent>"`), then call through the `execute` tool or `executor call <namespace> <tool>`.
+- Adding an integration is a one-time human step in the web UI (`executor web`) or via the CLI. Once added, every agent sees it — build on it instead of proposing new per-agent MCP configs.
+- Mutations pause for approval by default; resume a paused execution with `executor resume --execution-id <id>`.
+- Local file search stays on the `fff` MCP — it is latency-sensitive and does not belong behind the gateway.
+
 # Engineering decisions
 
 - Do not preserve backward compatibility. Remove obsolete paths instead of adding compatibility layers, fallbacks, or migrations.
