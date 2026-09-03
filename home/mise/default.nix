@@ -33,6 +33,13 @@
           # versions are reproducible, and 1.4.1 is what the docs and jdx's
           # benchmarks describe.
           "github:jdx/mr-boxington" = "1.4.1";
+
+          # Typst document toolchain -- pinned as a set: tinymist and
+          # typstyle track the compiler release. Agents compile-verify
+          # every edit, so the shims must resolve without a project file.
+          typst = "0.15.1";
+          tinymist = "0.15.2";
+          typstyle = "0.15.1";
         };
         wrappers.cargo = {
           # Route plain cargo through mbx. MBX_CARGO_SHIM_MODE tells mbx it was
