@@ -29,5 +29,6 @@ $env.PATH = (
     | append "/mnt/c/Program Files/Microsoft VS Code/bin"
     | append "/mnt/c/Windows/System32/OpenSSH"
     | append "/opt/homebrew/bin"
+    | prepend ($env.HOME | path join .opencode bin)
     | uniq
 )
