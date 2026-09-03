@@ -41,4 +41,16 @@ in
   home.packages = with pkgs; [
     flakePkgs.bash-env-nushell
   ];
+
+  # Worktrunk worktree switching. The nu wrapper exports `def wt`, so it must
+  # be sourced rather than `use`d -- a module import would bind it as `wt wt`.
+  # Nushell sources every file in the vendor autoload dir at startup, which is
+  # the install path upstream documents. Generated at build time, same
+  # reasoning as ../modules/hm/mise.nix: the store path cannot go stale or be
+  # garbage collected out from under a shell that is about to source it.
+  xdg.dataFile."nushell/vendor/autoload/wt.nu".source =
+    (pkgs.runCommand "worktrunk-nu" { } ''
+      mkdir -p $out
+      ${flakePkgs.worktrunk}/bin/wt config shell init nu > $out/wt.nu
+    '') + "/wt.nu";
 }

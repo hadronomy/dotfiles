@@ -1,8 +1,14 @@
-{ pkgs, ... }:
+{ pkgs, flakePkgs, ... }:
 {
   programs = {
     fish = {
       enable = true;
+      # Worktrunk worktree switching: the wrapper generated here is what lets
+      # `wt switch` change directory. The generated function resolves the wt
+      # binary from PATH at call time, so it follows nix profile updates.
+      interactiveShellInit = ''
+        ${flakePkgs.worktrunk}/bin/wt config shell init fish | source
+      '';
       # opencode2 (v2 beta) lands here via its own installer. Prepended, like
       # .zshrc. fish_add_path -g keeps it session-scoped instead of writing a
       # universal variable outside Nix's control.

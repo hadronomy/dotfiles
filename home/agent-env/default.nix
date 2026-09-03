@@ -9,7 +9,7 @@
 # (/etc/zprofile -> /etc/profile) rebuilds PATH in every login shell and would
 # otherwise leave Homebrew ahead of mise. Each file below runs after the
 # reordering that affects it.
-{ ... }:
+{ pkgs, flakePkgs, ... }:
 let
   # mise command-wrappers holds the cargo -> mbx shim ([wrappers.cargo] in
   # ../mise). It goes ahead of the shims farm so the wrapper wins PATH
@@ -42,6 +42,11 @@ in
     + path
     + ''
       export PATH="$HOME/.opencode/bin:$PATH"
+      # Worktrunk (wt) worktree switching. WORKTRUNK_BIN pins the generated
+      # shell wrapper to this build's binary, so `wt switch` works even in
+      # shells where PATH has not settled yet.
+      export WORKTRUNK_BIN="${flakePkgs.worktrunk}/bin/wt"
+      eval "$("$WORKTRUNK_BIN" config shell init zsh)"
     '';
 
     # bash -c reads neither of these, but codex's profile snapshot sources

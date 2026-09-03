@@ -24,6 +24,17 @@ Ignore Rust build output as `target` or `/target`. mbx replaces the directory wi
 
 Typing `cargo` in a non-interactive shell reaches a wrapper that forwards to `mbx` anyway, so nothing breaks if you forget — but write `mbx`, because bare flags (`cargo --version`) deliberately bypass it.
 
+# Worktrees
+
+Worktrees are how parallel agents share one repo without stepping on each other. Use `wt` (Worktrunk) for all of it — it owns the layout, hooks, and cleanup, so a worktree it creates carries `.env`, caches, and dependencies over from the primary worktree with copy-on-write reflinks.
+
+- Start isolated work on a task: `wt switch --create <branch>`. In a script, `cd` to the path `wt switch` prints.
+- Survey state: `wt list` (branch, status, CI, ahead/behind per worktree). Check out a pull request: `wt switch pr:123`.
+- Finish a local branch — commit, squash, rebase, fast-forward, clean up in one command: `wt merge`.
+- Sharing caches is opt-in per repo: a `.worktreeinclude` file (gitignore-style patterns) lists what the post-start hook copies.
+
+Raw `git worktree add` bypasses wt's layout and hooks — a hand-made worktree starts cold and lands outside `wt list`'s conventions. Create worktrees with `wt switch --create`.
+
 # Engineering decisions
 
 - Do not preserve backward compatibility. Remove obsolete paths instead of adding compatibility layers, fallbacks, or migrations.

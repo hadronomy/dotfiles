@@ -31,6 +31,13 @@
       inputs.bash-env-json.follows = "bash-env-json";
     };
 
+    # Tracked here rather than through nixpkgs: the locked nixpkgs pin lags
+    # worktrunk's release cadence (it shipped 0.61 when upstream was at 0.75).
+    worktrunk = {
+      url = "github:max-sixty/worktrunk";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     catppuccin.url = "github:catppuccin/nix";
   };
 
@@ -62,6 +69,7 @@
       mkFlakePkgs = system: {
         bash-env-json = bash-env-json.packages.${system}.default;
         bash-env-nushell = bash-env-nushell.packages.${system}.default;
+        worktrunk = worktrunk.packages.${system}.default;
       };
 
       forAllSystems = nixpkgs.lib.genAttrs systems;
